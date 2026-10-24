@@ -1,0 +1,133 @@
+' ==============================================================================
+' CLÍNICA VIDA SALUD - DIAGRAMAS DE SECUENCIA (CU01 AL CU12)
+' Estilo: Enterprise Architect (Actor - Boundary - Control - Entity)
+' Fragmentos ALT dorados, barras de activación amarillas y numeración jerárquica
+' ==============================================================================
+
+@startuml cu01_secuencia_iniciar_cerrar_sesion
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+
+' Estilo Enterprise Architect (Actor - Boundary - Control - Entity)
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+' Líneas de vida celestes y Barras de activación amarillas (Idénticas a Enterprise Architect)
+skinparam sequenceLifeLineBorderColor #80BFFF
+skinparam sequenceLifeLineBackgroundColor #FDF1A9
+skinparam sequenceLifeLineBorderThickness 1
+
+' Flechas estilo Enterprise Architect
+skinparam sequenceArrowColor #4A708B
+skinparam sequenceArrowFontColor #000000
+skinparam sequenceArrowFontSize 11
+
+' Fragmento ALT estilo Enterprise Architect (Borde y pestaña dorada)
+skinparam sequenceGroupBorderColor #D4A017
+skinparam sequenceGroupBackgroundColor transparent
+skinparam sequenceGroupHeaderBackgroundColor #FDD050
+skinparam sequenceGroupHeaderBorderColor #D4A017
+skinparam sequenceGroupHeaderFontColor #000000
+skinparam sequenceGroupFontColor #C59B27
+skinparam sequenceGroupFontSize 11
+skinparam sequenceGroupFontStyle bold
+
+actor "Usuario / Administrador" as User
+boundary "UI_Sesion" as UI
+control "AutenticacionController" as Control
+entity "Usuario" as Usuario
+entity "Rol" as Rol
+entity "BitacoraAuditoria" as Bitacora
+
+alt Iniciar sesión exitoso
+    User -> UI : 1. IniciarSesion(credenciales)
+    activate User #FDF1A9
+    activate UI #FDF1A9
+    
+    UI -> Control : 1.1. IniciarSesion(Request)
+    activate Control #FDF1A9
+    
+    Control -> Usuario : 1.2. BuscarPorCredenciales(login)
+    activate Usuario #FDF1A9
+    Usuario --> Control : RespuestaUsuario()
+    deactivate Usuario
+    
+    Control -> Rol : 1.3. ObtenerRol(idRol)
+    activate Rol #FDF1A9
+    Rol --> Control : RespuestaRol()
+    deactivate Rol
+    
+    Control -> Bitacora : 1.4. RegistrarAcceso("LOGIN", idUsuario)
+    activate Bitacora #FDF1A9
+    Bitacora --> Control : RespuestaBitacora()
+    deactivate Bitacora
+    
+    Control --> UI : RespuestaLogin(token, usuario)
+    deactivate Control
+    
+    UI --> User : Confirmación(dashboard)
+    deactivate UI
+    deactivate User
+
+else Cerrar sesión
+    User -> UI : 2. CerrarSesion()
+    activate User #FDF1A9
+    activate UI #FDF1A9
+    
+    UI -> Control : 2.1. CerrarSesion(Request)
+    activate Control #FDF1A9
+    
+    Control -> Usuario : 2.2. RevocarToken()
+    activate Usuario #FDF1A9
+    Usuario --> Control : RespuestaToken()
+    deactivate Usuario
+    
+    Control -> Bitacora : 2.3. RegistrarSalida("LOGOUT", idUsuario)
+    activate Bitacora #FDF1A9
+    Bitacora --> Control : RespuestaBitacora()
+    deactivate Bitacora
+    
+    Control --> UI : RespuestaCierre()
+    deactivate Control
+    
+    UI --> User : Confirmación()
+    deactivate UI
+    deactivate User
+
+else Recuperar contraseña
+    User -> UI : 3. SolicitarRecuperacion(email)
+    activate User #FDF1A9
+    activate UI #FDF1A9
+    
+    UI -> Control : 3.1. SolicitarRecuperacion(email)
+    activate Control #FDF1A9
+    
+    Control -> Usuario : 3.2. VerificarEmail(email)
+    activate Usuario #FDF1A9
+    Usuario --> Control : RespuestaEmail()
+    deactivate Usuario
+    
+    Control -> Usuario : 3.3. GuardarCodigoOtp(otp)
+    activate Usuario #FDF1A9
+    Usuario --> Control : RespuestaOtp()
+    deactivate Usuario
+    
+    Control --> UI : RespuestaEnvioOtp()
+    deactivate Control
+    
+    UI --> User : Confirmación()
+    deactivate UI
+    deactivate User
+end
+
+@enduml
