@@ -20,7 +20,7 @@ class CU03_GestionUsuariosController extends Controller
     /**
      * CU03 - Listar usuarios internos con filtros, estadísticas y paginación
      */
-    public function index(Request $request): JsonResponse
+    public function listarUsuarios(Request $request): JsonResponse
     {
         $query = Usuario::with('rol')->select(
             'id_usuario',
@@ -105,7 +105,7 @@ class CU03_GestionUsuariosController extends Controller
     /**
      * CU03 - Crear un nuevo usuario interno con validaciones de seguridad
      */
-    public function store(Request $request): JsonResponse
+    public function crearUsuario(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|min:3|max:50|unique:usuarios,username',
@@ -200,7 +200,7 @@ class CU03_GestionUsuariosController extends Controller
     /**
      * CU03 - Consultar un usuario específico por ID
      */
-    public function show(int $id): JsonResponse
+    public function obtenerUsuario(int $id): JsonResponse
     {
         $usuario = Usuario::with('rol')->find($id);
 
@@ -229,7 +229,7 @@ class CU03_GestionUsuariosController extends Controller
     /**
      * CU03 - Actualizar datos de un usuario interno
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function actualizarUsuario(Request $request, int $id): JsonResponse
     {
         $usuario = Usuario::find($id);
 
@@ -424,7 +424,7 @@ class CU03_GestionUsuariosController extends Controller
     /**
      * CU03 - Eliminación o Desactivación segura
      */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function eliminarUsuario(Request $request, int $id): JsonResponse
     {
         $usuario = Usuario::find($id);
         if (!$usuario) {
@@ -468,7 +468,7 @@ class CU03_GestionUsuariosController extends Controller
     /**
      * CU03 - Consultar todos los Roles con sus Permisos asignados
      */
-    public function roles(): JsonResponse
+    public function obtenerRoles(): JsonResponse
     {
         $roles = Rol::with('permisos')->orderBy('id_rol', 'asc')->get();
 
@@ -493,7 +493,7 @@ class CU03_GestionUsuariosController extends Controller
     /**
      * CU03 - Consultar todos los Permisos del sistema agrupados por Módulo
      */
-    public function permisos(): JsonResponse
+    public function obtenerPermisos(): JsonResponse
     {
         $permisos = Permiso::orderBy('modulo', 'asc')->orderBy('id_permiso', 'asc')->get();
 
@@ -562,4 +562,15 @@ class CU03_GestionUsuariosController extends Controller
             ],
         ]);
     }
+
+    // ==========================================
+    // Alias para compatibilidad de rutas y llamadas
+    // ==========================================
+    public function index(Request $request): JsonResponse { return $this->listarUsuarios($request); }
+    public function store(Request $request): JsonResponse { return $this->crearUsuario($request); }
+    public function show(int $id): JsonResponse { return $this->obtenerUsuario($id); }
+    public function update(Request $request, int $id): JsonResponse { return $this->actualizarUsuario($request, $id); }
+    public function destroy(Request $request, int $id): JsonResponse { return $this->eliminarUsuario($request, $id); }
+    public function roles(): JsonResponse { return $this->obtenerRoles(); }
+    public function permisos(): JsonResponse { return $this->obtenerPermisos(); }
 }

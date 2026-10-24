@@ -126,6 +126,16 @@ export const useCU02BitacoraAuditoriaController = () => {
     filters,
     selectedLog,
     setSelectedLog,
+    // Funciones en Español
+    cargarEstadisticas: loadStats,
+    cargarRegistros: loadLogs,
+    actualizarFiltro: updateFilter,
+    establecerPagina: setPage,
+    reiniciarFiltros: resetFilters,
+    recargar: () => { loadStats(); loadLogs(); },
+    seleccionarRegistro: setSelectedLog,
+
+    // Compatibilidad
     updateFilter,
     setPage,
     resetFilters,

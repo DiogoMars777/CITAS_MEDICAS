@@ -14,7 +14,7 @@ class CU02_BitacoraAuditoriaController extends Controller
     /**
      * CU02 - Consultar bitácora de auditoría con filtros avanzados y hora boliviana
      */
-    public function index(Request $request): JsonResponse
+    public function listarAuditoria(Request $request): JsonResponse
     {
         $query = BitacoraAuditoria::with(['usuario' => function ($q) {
             $q->select('id_usuario', 'username', 'email', 'id_rol');
@@ -108,7 +108,7 @@ class CU02_BitacoraAuditoriaController extends Controller
     /**
      * CU02 - Detalle individual de un evento de auditoría
      */
-    public function show(int $id): JsonResponse
+    public function obtenerDetalleAuditoria(int $id): JsonResponse
     {
         $log = BitacoraAuditoria::with('usuario')->find($id);
 
@@ -146,7 +146,7 @@ class CU02_BitacoraAuditoriaController extends Controller
     /**
      * CU02 - Métricas y resumen estadístico de auditoría (Hora Boliviana)
      */
-    public function stats(): JsonResponse
+    public function estadisticasAuditoria(): JsonResponse
     {
         $hoyBolivia = Carbon::now('America/La_Paz')->toDateString();
 
@@ -179,4 +179,11 @@ class CU02_BitacoraAuditoriaController extends Controller
             ]
         ]);
     }
+
+    // ==========================================
+    // Alias para compatibilidad de rutas y llamadas
+    // ==========================================
+    public function index(Request $request): JsonResponse { return $this->listarAuditoria($request); }
+    public function show(int $id): JsonResponse { return $this->obtenerDetalleAuditoria($id); }
+    public function stats(): JsonResponse { return $this->estadisticasAuditoria(); }
 }

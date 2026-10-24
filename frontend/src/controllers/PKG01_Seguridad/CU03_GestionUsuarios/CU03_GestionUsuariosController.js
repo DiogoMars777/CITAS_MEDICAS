@@ -339,6 +339,22 @@ export const useCU03GestionUsuariosController = () => {
     modalStatusOpen,
     userForStatus,
     nextStatusTarget,
+    // Funciones en Español
+    obtenerUsuarios: fetchUsuarios,
+    obtenerRoles: fetchRoles,
+    obtenerPermisos: fetchPermisos,
+    guardarUsuario: handleSaveUser,
+    confirmarCambioEstado: handleConfirmChangeStatus,
+    seleccionarRolParaPermisos: handleSelectRoleForPermisos,
+    alternarPermiso: handleTogglePermiso,
+    guardarPermisosRol: handleSaveRolePermissions,
+    abrirModalCrear: openCreateModal,
+    abrirModalEditar: openEditModal,
+    abrirModalEstado: openStatusModal,
+    cerrarModales: closeModals,
+    limpiarMensajes: () => { setError(null); setSuccessMsg(null); },
+
+    // Funciones originales para compatibilidad
     fetchUsuarios,
     handleSaveUser,
     handleConfirmChangeStatus,

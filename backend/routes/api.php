@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Controllers\PKG01_Seguridad\CU01_Autenticacion\CU01_AuthController;
+use App\Controllers\PKG01_Seguridad\CU01_Autenticacion\CU01_AutenticacionController;
 use App\Controllers\PKG01_Seguridad\CU02_BitacoraAuditoria\CU02_BitacoraAuditoriaController;
 use App\Controllers\PKG01_Seguridad\CU03_GestionUsuarios\CU03_GestionUsuariosController;
 use App\Controllers\PKG02_MedicosEspecialidades\CU04_GestionEspecialidades\CU04_EspecialidadController;
@@ -26,14 +26,14 @@ use App\Controllers\PKG03_PacientesHistorial\CU14_AntecedentesClinicos\CU14_Ante
 // CU01: Autenticación y Recuperación
 // ==========================================
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [CU01_AuthController::class, 'login']);
-    Route::post('/forgot-password', [CU01_AuthController::class, 'forgotPassword']);
-    Route::post('/verify-otp', [CU01_AuthController::class, 'verifyOtp']);
-    Route::post('/reset-password', [CU01_AuthController::class, 'resetPassword']);
+    Route::post('/login', [CU01_AutenticacionController::class, 'iniciarSesion']);
+    Route::post('/forgot-password', [CU01_AutenticacionController::class, 'solicitarRecuperacion']);
+    Route::post('/verify-otp', [CU01_AutenticacionController::class, 'verificarCodigoOtp']);
+    Route::post('/reset-password', [CU01_AutenticacionController::class, 'restablecerContrasena']);
 
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/logout', [CU01_AuthController::class, 'logout']);
-        Route::get('/me', [CU01_AuthController::class, 'me']);
+        Route::post('/logout', [CU01_AutenticacionController::class, 'cerrarSesion']);
+        Route::get('/me', [CU01_AutenticacionController::class, 'obtenerUsuarioActual']);
     });
 });
 
@@ -41,24 +41,24 @@ Route::prefix('auth')->group(function () {
 // CU02: Bitácora de Auditoría (Hora Bolivia)
 // ==========================================
 Route::prefix('audit')->group(function () {
-    Route::get('/logs', [CU02_BitacoraAuditoriaController::class, 'index']);
-    Route::get('/stats', [CU02_BitacoraAuditoriaController::class, 'stats']);
-    Route::get('/logs/{id}', [CU02_BitacoraAuditoriaController::class, 'show']);
+    Route::get('/logs', [CU02_BitacoraAuditoriaController::class, 'listarAuditoria']);
+    Route::get('/stats', [CU02_BitacoraAuditoriaController::class, 'estadisticasAuditoria']);
+    Route::get('/logs/{id}', [CU02_BitacoraAuditoriaController::class, 'obtenerDetalleAuditoria']);
 });
 
 // ==========================================
 // CU03: Gestión de Usuarios Internos, Roles y Permisos
 // ==========================================
 Route::prefix('usuarios')->group(function () {
-    Route::get('/', [CU03_GestionUsuariosController::class, 'index']);
-    Route::post('/', [CU03_GestionUsuariosController::class, 'store']);
-    Route::get('/meta/roles', [CU03_GestionUsuariosController::class, 'roles']);
-    Route::get('/meta/permisos', [CU03_GestionUsuariosController::class, 'permisos']);
+    Route::get('/', [CU03_GestionUsuariosController::class, 'listarUsuarios']);
+    Route::post('/', [CU03_GestionUsuariosController::class, 'crearUsuario']);
+    Route::get('/meta/roles', [CU03_GestionUsuariosController::class, 'obtenerRoles']);
+    Route::get('/meta/permisos', [CU03_GestionUsuariosController::class, 'obtenerPermisos']);
     Route::post('/meta/roles/{idRol}/permisos', [CU03_GestionUsuariosController::class, 'asignarPermisosRol']);
-    Route::get('/{id}', [CU03_GestionUsuariosController::class, 'show']);
-    Route::put('/{id}', [CU03_GestionUsuariosController::class, 'update']);
+    Route::get('/{id}', [CU03_GestionUsuariosController::class, 'obtenerUsuario']);
+    Route::put('/{id}', [CU03_GestionUsuariosController::class, 'actualizarUsuario']);
     Route::patch('/{id}/estado', [CU03_GestionUsuariosController::class, 'cambiarEstado']);
-    Route::delete('/{id}', [CU03_GestionUsuariosController::class, 'destroy']);
+    Route::delete('/{id}', [CU03_GestionUsuariosController::class, 'eliminarUsuario']);
 });
 
 // ==========================================

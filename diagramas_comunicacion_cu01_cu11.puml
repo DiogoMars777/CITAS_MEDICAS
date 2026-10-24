@@ -1,0 +1,452 @@
+' ==============================================================================
+' CLÍNICA VIDA SALUD - DIAGRAMAS DE COMUNICACIÓN (CU01 AL CU11)
+' Estilo: Enterprise Architect (Actor - Boundary - Control - Entity)
+' ==============================================================================
+
+' ------------------------------------------------------------------------------
+' CU01: Iniciar y cerrar sesión
+' ------------------------------------------------------------------------------
+@startuml cu01_iniciar_cerrar_sesion
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU01 Iniciar y cerrar sesión" {
+    () " " as spacer
+    actor "Usuario / Administrador" as UsuarioActor
+    boundary UI_Sesion
+    control CU01_AuthController
+    entity Usuario
+    entity BitacoraAuditoria
+
+    spacer -[hidden]down- UsuarioActor
+
+    UsuarioActor -right- UI_Sesion : <font color=#000000>1: iniciarSesion(login, password) →</font>\n<font color=#800000>2: solicitarRecuperacion(email) →</font>\n<font color=#008000>3: verificarOtp(email, otp) →</font>\n<font color=#000080>4: restablecerPassword(datos) →</font>\n<font color=#800080>5: cerrarSesion() →</font>
+
+    UI_Sesion -right- CU01_AuthController : <font color=#000000>1.1: login(Request) →</font>\n<font color=#800000>2.1: forgotPassword(Request) →</font>\n<font color=#008000>3.1: verifyOtp(Request) →</font>\n<font color=#000080>4.1: resetPassword(Request) →</font>\n<font color=#800080>5.1: logout(Request) →</font>
+
+    CU01_AuthController -right- Usuario : <font color=#000000>1.2: whereRaw('LOWER(email) = ?')->orWhereRaw()->first() →</font>\n<font color=#000000>1.3: update(['ultimo_login' => now()]) →</font>\n<font color=#800000>2.2: whereRaw('LOWER(email) = ?')->first() →</font>\n<font color=#000080>4.2: update(['password_hash' => hash]) →</font>\n<font color=#800080>5.2: currentAccessToken()->delete() →</font>
+
+    CU01_AuthController -down- BitacoraAuditoria : <font color=#000000>1.4: registrar('PKG01_Seguridad', 'usuarios', id, 'LOGIN') →</font>\n<font color=#800080>5.3: registrar('PKG01_Seguridad', 'usuarios', id, 'LOGOUT') →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU02: Consultar bitácora de auditoría
+' ------------------------------------------------------------------------------
+@startuml cu02_consultar_bitacora_auditoria
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU02 Consultar bitácora de auditoría" {
+    () " " as spacer
+    actor "Administrador" as Administrador
+    boundary UI_Auditoria
+    control CU02_BitacoraAuditoriaController
+    entity BitacoraAuditoria
+    entity Usuario
+
+    spacer -[hidden]down- Administrador
+
+    Administrador -right- UI_Auditoria : <font color=#000000>1: mostrarBitacora(filtros) →</font>\n<font color=#800000>2: verDetalleEvento(id) →</font>\n<font color=#008000>3: consultarMetricas() →</font>
+
+    UI_Auditoria -right- CU02_BitacoraAuditoriaController : <font color=#000000>1.1: index(Request) →</font>\n<font color=#800000>2.1: show(id) →</font>\n<font color=#008000>3.1: stats() →</font>
+
+    CU02_BitacoraAuditoriaController -right- BitacoraAuditoria : <font color=#000000>1.2: with('usuario')->where(filtros)->orderByDesc('fecha_creacion')->paginate() →</font>\n<font color=#800000>2.2: with('usuario')->find(id) →</font>\n<font color=#008000>3.2: count(), whereDate(), whereIn('operacion')->count() →</font>
+
+    CU02_BitacoraAuditoriaController -down- Usuario : <font color=#000000>1.3: select('id_usuario', 'username', 'email', 'id_rol') →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU03: Gestionar usuarios, roles y permisos
+' ------------------------------------------------------------------------------
+@startuml cu03_gestionar_usuarios_roles_permisos
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU03 Gestionar usuarios, roles y permisos" {
+    () " " as spacer
+    actor "Administrador" as Administrador
+    boundary UI_GestionUsuarios
+    control CU03_GestionUsuariosController
+    entity Usuario
+    entity Rol
+    entity BitacoraAuditoria
+
+    spacer -[hidden]down- Administrador
+
+    Administrador -right- UI_GestionUsuarios : <font color=#000000>1: mostrarUsuarios(filtros) →</font>\n<font color=#800000>2: crearUsuario(datos) →</font>\n<font color=#008000>3: editarUsuario(id, datos) →</font>\n<font color=#000080>4: cambiarEstado(id, nuevoEstado) →</font>
+
+    UI_GestionUsuarios -right- CU03_GestionUsuariosController : <font color=#000000>1.1: index(Request) →</font>\n<font color=#800000>2.1: store(Request) →</font>\n<font color=#008000>3.1: update(Request, id) →</font>\n<font color=#000080>4.1: cambiarEstado(Request, id) →</font>
+
+    CU03_GestionUsuariosController -right- Usuario : <font color=#000000>1.2: with('rol')->paginate() →</font>\n<font color=#800000>2.3: create(validated) →</font>\n<font color=#008000>3.2: find(id)->update(validated) →</font>\n<font color=#000080>4.2: find(id)->update(['estado' => nuevoEstado]) →</font>
+
+    CU03_GestionUsuariosController -down- Rol : <font color=#000000>1.3: with('permisos')->get() →</font>\n<font color=#800000>2.2: exists:roles,id_rol →</font>
+
+    CU03_GestionUsuariosController -up- BitacoraAuditoria : <font color=#800000>2.4: registrar('PKG01_Seguridad', 'usuarios', id, 'INSERT') →</font>\n<font color=#008000>3.3: registrar('PKG01_Seguridad', 'usuarios', id, 'UPDATE') →</font>\n<font color=#000080>4.3: registrar('PKG01_Seguridad', 'usuarios', id, 'CAMBIO_ESTADO') →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU04: Gestionar especialidades médicas
+' ------------------------------------------------------------------------------
+@startuml cu04_gestionar_especialidades
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU04 Gestionar especialidades médicas" {
+    () " " as spacer
+    actor "Administrador" as Administrador
+    boundary UI_Especialidad
+    control CU04_EspecialidadController
+    entity Especialidad
+    entity MedicoEspecialidad
+    entity BitacoraAuditoria
+
+    spacer -[hidden]down- Administrador
+
+    Administrador -right- UI_Especialidad : <font color=#000000>1: mostrarEspecialidades(filtros) →</font>\n<font color=#800000>2: crearEspecialidad(datos) →</font>\n<font color=#008000>3: editarEspecialidad(id, datos) →</font>\n<font color=#000080>4: cambiarEstado(id, estado) →</font>
+
+    UI_Especialidad -right- CU04_EspecialidadController : <font color=#000000>1.1: index(Request) →</font>\n<font color=#800000>2.1: store(Request) →</font>\n<font color=#008000>3.1: update(Request, id) →</font>\n<font color=#000080>4.1: cambiarEstado(Request, id) →</font>
+
+    CU04_EspecialidadController -right- Especialidad : <font color=#000000>1.2: orderBy('nombre')->paginate() →</font>\n<font color=#800000>2.2: create(validated) →</font>\n<font color=#008000>3.2: find(id)->update(validated) →</font>\n<font color=#000080>4.2: find(id)->update(['estado' => estado]) →</font>
+
+    CU04_EspecialidadController -down- MedicoEspecialidad : <font color=#000000>1.3: where('id_especialidad', id)->count() →</font>
+
+    CU04_EspecialidadController -up- BitacoraAuditoria : <font color=#800000>2.3: registrar('PKG02_MedicosEspecialidades', 'especialidades', id, 'INSERT') →</font>\n<font color=#008000>3.3: registrar('PKG02_MedicosEspecialidades', 'especialidades', id, 'UPDATE') →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU05: Gestionar médicos y asignaciones
+' ------------------------------------------------------------------------------
+@startuml cu05_gestionar_medicos
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU05 Gestionar médicos y asignaciones" {
+    () " " as spacer
+    actor "Administrador" as Administrador
+    boundary UI_Medico
+    control CU05_MedicoController
+    entity Medico
+    entity Usuario
+    entity MedicoEspecialidad
+    entity BitacoraAuditoria
+
+    spacer -[hidden]down- Administrador
+
+    Administrador -right- UI_Medico : <font color=#000000>1: mostrarMedicos(filtros) →</font>\n<font color=#800000>2: registrarMedico(datos) →</font>\n<font color=#008000>3: verDetalleMedico(id) →</font>\n<font color=#000080>4: actualizarMedico(id, datos) →</font>
+
+    UI_Medico -right- CU05_MedicoController : <font color=#000000>1.1: index(Request) →</font>\n<font color=#800000>2.1: store(Request) →</font>\n<font color=#008000>3.1: show(id) →</font>\n<font color=#000080>4.1: update(Request, id) →</font>
+
+    CU05_MedicoController -right- Medico : <font color=#000000>1.2: with(['usuario', 'especialidades'])->paginate() →</font>\n<font color=#800000>2.3: create(validated) →</font>\n<font color=#008000>3.2: with(['usuario', 'especialidades'])->findOrFail(id) →</font>\n<font color=#000080>4.2: findOrFail(id)->update(validated) →</font>
+
+    CU05_MedicoController -up- Usuario : <font color=#800000>2.2: create(cuentaMedico) →</font>
+
+    CU05_MedicoController -down- MedicoEspecialidad : <font color=#800000>2.4: insert(id_medico, id_especialidad, es_principal) →</font>\n<font color=#000080>4.3: sync(especialidades) →</font>
+
+    CU05_MedicoController -up- BitacoraAuditoria : <font color=#800000>2.5: registrar('PKG02_MedicosEspecialidades', 'medicos', id, 'INSERT') →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU06: Registrar y gestionar pacientes
+' ------------------------------------------------------------------------------
+@startuml cu06_registrar_gestionar_pacientes
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU06 Registrar y gestionar pacientes" {
+    () " " as spacer
+    actor "Recepcionista / Administrador" as Recep
+    boundary UI_Paciente
+    control CU06_PacienteController
+    entity Paciente
+    entity HistoriaClinica
+    entity ContactoEmergencia
+
+    spacer -[hidden]down- Recep
+
+    Recep -right- UI_Paciente : <font color=#000000>1: mostrarPacientes(filtros) →</font>\n<font color=#800000>2: buscarPorCI(ci) →</font>\n<font color=#008000>3: registrarPaciente(datos) →</font>\n<font color=#000080>4: actualizarPaciente(id, datos) →</font>
+
+    UI_Paciente -right- CU06_PacienteController : <font color=#000000>1.1: index(Request) →</font>\n<font color=#800000>2.1: buscarPorCi(ci) →</font>\n<font color=#008000>3.1: store(Request) →</font>\n<font color=#000080>4.1: update(Request, id) →</font>
+
+    CU06_PacienteController -right- Paciente : <font color=#000000>1.2: with(['historiaClinica', 'contactoEmergencia'])->paginate() →</font>\n<font color=#800000>2.2: where('ci', ci)->first() →</font>\n<font color=#008000>3.2: create(validated) →</font>\n<font color=#000080>4.2: findOrFail(id)->update(validated) →</font>
+
+    CU06_PacienteController -down- HistoriaClinica : <font color=#008000>3.3: create(['id_paciente' => id, 'numero_expediente' => exp]) →</font>\n<font color=#000080>4.3: updateOrCreate(['id_paciente' => id], datosClinicos) →</font>
+
+    CU06_PacienteController -up- ContactoEmergencia : <font color=#008000>3.4: create(datosContacto) →</font>\n<font color=#000080>4.4: update(datosContacto) →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU07: Configurar turnos y fraccionamiento de agenda
+' ------------------------------------------------------------------------------
+@startuml cu07_configurar_turnos_agenda
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU07 Configurar turnos y fraccionamiento de agenda" {
+    () " " as spacer
+    actor "Administrador / Recepción" as Admin
+    boundary UI_TurnoMedico
+    control CU07_TurnoMedicoController
+    entity TurnoMedico
+    entity Medico
+    entity BitacoraAuditoria
+
+    spacer -[hidden]down- Admin
+
+    Admin -right- UI_TurnoMedico : <font color=#000000>1: mostrarTurnos(filtros) →</font>\n<font color=#800000>2: crearTurno(id_medico, dia, hora_ini, hora_fin) →</font>\n<font color=#008000>3: verBloques15Min(id) →</font>\n<font color=#000080>4: cambiarEstado(id, estado) →</font>
+
+    UI_TurnoMedico -right- CU07_TurnoMedicoController : <font color=#000000>1.1: index(Request) →</font>\n<font color=#800000>2.1: store(Request) →</font>\n<font color=#008000>3.1: show(id) →</font>\n<font color=#000080>4.1: cambiarEstado(Request, id) →</font>
+
+    CU07_TurnoMedicoController -right- TurnoMedico : <font color=#000000>1.2: with('medico')->orderBy('dia_semana')->paginate() →</font>\n<font color=#800000>2.3: create(['duracion_bloque_min' => 15, ...]) →</font>\n<font color=#008000>3.2: findOrFail(id)->generarBloques() →</font>\n<font color=#000080>4.2: findOrFail(id)->update(['estado' => estado]) →</font>
+
+    CU07_TurnoMedicoController -down- Medico : <font color=#800000>2.2: where('id_medico', id)->where('estado', 'ACTIVO')->exists() →</font>
+
+    CU07_TurnoMedicoController -up- BitacoraAuditoria : <font color=#800000>2.4: registrar('PKG04_AgendasHorarios', 'turnos_medicos', id, 'INSERT') →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU08: Registrar bloqueos de agenda médica
+' ------------------------------------------------------------------------------
+@startuml cu08_registrar_bloqueos_agenda
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU08 Registrar bloqueos de agenda médica" {
+    () " " as spacer
+    actor "Administrador / Recepción" as Admin
+    boundary UI_BloqueoAgenda
+    control CU08_BloqueoAgendaController
+    entity BloqueoAgenda
+    entity Cita
+    entity BitacoraAuditoria
+
+    spacer -[hidden]down- Admin
+
+    Admin -right- UI_BloqueoAgenda : <font color=#000000>1: mostrarBloqueos(filtros) →</font>\n<font color=#800000>2: registrarBloqueo(datos) →</font>\n<font color=#008000>3: eliminarBloqueo(id) →</font>
+
+    UI_BloqueoAgenda -right- CU08_BloqueoAgendaController : <font color=#000000>1.1: index(Request) →</font>\n<font color=#800000>2.1: store(Request) →</font>\n<font color=#008000>3.1: destroy(id) →</font>
+
+    CU08_BloqueoAgendaController -right- BloqueoAgenda : <font color=#000000>1.2: with('medico')->orderByDesc('fecha_inicio')->paginate() →</font>\n<font color=#800000>2.3: create(validated) →</font>\n<font color=#008000>3.2: findOrFail(id)->delete() →</font>
+
+    CU08_BloqueoAgendaController -down- Cita : <font color=#800000>2.2: where('id_medico', id)->whereBetween('fecha_cita')->count() →</font>
+
+    CU08_BloqueoAgendaController -up- BitacoraAuditoria : <font color=#800000>2.4: registrar('PKG04_AgendasHorarios', 'bloqueos_agenda', id, 'INSERT') →</font>\n<font color=#008000>3.3: registrar('PKG04_AgendasHorarios', 'bloqueos_agenda', id, 'DELETE') →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU09: Consultar disponibilidad de horarios médicos
+' ------------------------------------------------------------------------------
+@startuml cu09_consultar_disponibilidad
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU09 Consultar disponibilidad de horarios médicos" {
+    () " " as spacer
+    actor "Paciente / Recepción" as UsuarioActor
+    boundary UI_Disponibilidad
+    control CU09_DisponibilidadController
+    entity TurnoMedico
+    entity Cita
+    entity BloqueoAgenda
+
+    spacer -[hidden]down- UsuarioActor
+
+    UsuarioActor -right- UI_Disponibilidad : <font color=#000000>1: cargarFiltrosMeta() →</font>\n<font color=#800000>2: consultarCupos(fecha, idEsp, idMed) →</font>\n<font color=#008000>3: verCalendarioQuincenal(idMed) →</font>
+
+    UI_Disponibilidad -right- CU09_DisponibilidadController : <font color=#000000>1.1: meta(Request) →</font>\n<font color=#800000>2.1: consultar(Request) →</font>\n<font color=#008000>3.1: calendarioQuincenal(Request) →</font>
+
+    CU09_DisponibilidadController -right- TurnoMedico : <font color=#800000>2.2: where('dia_semana', dia)->where('estado', 'ACTIVO')->get() →</font>\n<font color=#008000>3.2: where('id_medico', id)->get() →</font>
+
+    CU09_DisponibilidadController -down- Cita : <font color=#800000>2.3: where('fecha_cita', fecha)->whereIn('estado_cita', activas)->get() →</font>
+
+    CU09_DisponibilidadController -up- BloqueoAgenda : <font color=#800000>2.4: where('fecha_inicio', '<=', fecha)->where('fecha_fin', '>=', fecha)->get() →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU10: Reservar cita médica con control de concurrencia
+' ------------------------------------------------------------------------------
+@startuml cu10_reservar_cita_medica
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU10 Reservar cita médica con control de concurrencia" {
+    () " " as spacer
+    actor "Paciente / Recepcionista" as ActorReserva
+    boundary UI_ReservaCita
+    control CU10_ReservaCitaController
+    entity Cita
+    entity BloqueoAgenda
+    entity BitacoraAuditoria
+
+    spacer -[hidden]down- ActorReserva
+
+    ActorReserva -right- UI_ReservaCita : <font color=#000000>1: abrirFormularioReserva() →</font>\n<font color=#800000>2: confirmarReserva(idPac, idMed, idEsp, fecha, horaIni, horaFin) →</font>\n<font color=#008000>3: generarComprobante(idCita) →</font>
+
+    UI_ReservaCita -right- CU10_ReservaCitaController : <font color=#000000>1.1: meta(Request) →</font>\n<font color=#800000>2.1: store(Request) [DB::transaction] →</font>\n<font color=#008000>3.1: show(id) →</font>
+
+    CU10_ReservaCitaController -right- Cita : <font color=#800000>2.2: where(medico, fecha, horario)->lockForUpdate()->first() →</font>\n<font color=#800000>2.4: create(codigo_cita, estado: 'PROGRAMADA') →</font>\n<font color=#008000>3.2: with(['paciente','medico','especialidad'])->findOrFail(id) →</font>
+
+    CU10_ReservaCitaController -down- BloqueoAgenda : <font color=#800000>2.3: where('id_medico', id)->whereBetween()->exists() →</font>
+
+    CU10_ReservaCitaController -up- BitacoraAuditoria : <font color=#800000>2.5: registrar('PKG05_GestionCitasConcurrencia', 'citas', id, 'INSERT') →</font>
+}
+@enduml
+
+' ------------------------------------------------------------------------------
+' CU11: Reprogramar cita médica
+' ------------------------------------------------------------------------------
+@startuml cu11_reprogramar_cita_medica
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam interfaceBackgroundColor transparent
+skinparam interfaceBorderColor transparent
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor #A80036
+skinparam boundaryBackgroundColor #CCEEFF
+skinparam boundaryBorderColor #0088CC
+skinparam controlBackgroundColor #CCEEFF
+skinparam controlBorderColor #0088CC
+skinparam entityBackgroundColor #CCEEFF
+skinparam entityBorderColor #0088CC
+
+frame "sd CU11 Reprogramar cita médica" {
+    () " " as spacer
+    actor "Paciente / Recepcionista" as ActorReprog
+    boundary UI_ReprogramacionCita
+    control CU11_ReprogramacionController
+    entity Cita
+    entity HistorialReprogramacion
+    entity BitacoraAuditoria
+
+    spacer -[hidden]down- ActorReprog
+
+    ActorReprog -right- UI_ReprogramacionCita : <font color=#000000>1: solicitarReprogramacion(idCita) →</font>\n<font color=#800000>2: guardarNuevaFechaHora(fechaNueva, horaNueva, motivo) →</font>\n<font color=#008000>3: consultarHistorialReprogramaciones(idCita) →</font>
+
+    UI_ReprogramacionCita -right- CU11_ReprogramacionController : <font color=#000000>1.1: show(id) →</font>\n<font color=#800000>2.1: reprogramarCita(Request, id) [DB::transaction] →</font>\n<font color=#008000>3.1: historial(id) →</font>
+
+    CU11_ReprogramacionController -right- Cita : <font color=#000000>1.2: findOrFail(id) →</font>\n<font color=#800000>2.2: where(medico, fechaNueva, horaNueva)->lockForUpdate()->first() →</font>\n<font color=#800000>2.3: update(['fecha_cita' => nueva, 'hora_inicio' => nueva]) →</font>
+
+    CU11_ReprogramacionController -down- HistorialReprogramacion : <font color=#800000>2.4: create(datosAnteriores, datosNuevos, motivo) →</font>\n<font color=#008000>3.2: where('id_cita', id)->orderByDesc('fecha_operacion')->get() →</font>
+
+    CU11_ReprogramacionController -up- BitacoraAuditoria : <font color=#800000>2.5: registrar('PKG05_GestionCitasConcurrencia', 'citas', id, 'UPDATE') →</font>
+}
+@enduml

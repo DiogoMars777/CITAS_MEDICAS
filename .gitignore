@@ -9,6 +9,9 @@ vendor/
 .env.*
 !.env.example
 *.local
+*.sqlite
+database.sqlite
+clinica_vida_salud
 
 # Compilados y builds
 dist/

@@ -35,12 +35,12 @@ export const CU01_LoginView = ({ onLoginSuccess }) => {
     successMsg,
     loginCooldown,
     cooldown,
-    login,
-    requestResetCode,
-    verifyCode,
-    submitNewPassword,
-    logout,
-    clearMessages,
+    iniciarSesion,
+    solicitarCodigoRecuperacion,
+    verificarCodigo,
+    restablecerContrasena,
+    cerrarSesion,
+    limpiarMensajes,
   } = useCU01AuthController();
 
   // Modos de vista: 'login' | 'recovery_email' | 'recovery_otp' | 'recovery_new_password' | 'recovery_success'
@@ -63,7 +63,7 @@ export const CU01_LoginView = ({ onLoginSuccess }) => {
 
   // Cambiar de pantalla limpiando mensajes
   const changeView = (newView) => {
-    clearMessages();
+    limpiarMensajes();
     setViewMode(newView);
   };
 
@@ -71,7 +71,7 @@ export const CU01_LoginView = ({ onLoginSuccess }) => {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!loginForm.login || !loginForm.password || loginCooldown > 0) return;
-    const res = await login(loginForm.login, loginForm.password);
+    const res = await iniciarSesion(loginForm.login, loginForm.password);
     if (res?.success && onLoginSuccess) {
       onLoginSuccess(res.user);
     }
@@ -80,7 +80,7 @@ export const CU01_LoginView = ({ onLoginSuccess }) => {
   // Acceso Rápido Administrador para Demo / Pruebas
   const handleFastAdminLogin = async () => {
     setLoginForm({ login: 'admin', password: 'Password123#', rememberMe: true });
-    const res = await login('admin', 'Password123#');
+    const res = await iniciarSesion('admin', 'Password123#');
     if (res?.success && onLoginSuccess) {
       onLoginSuccess(res.user);
     }
@@ -99,7 +99,7 @@ export const CU01_LoginView = ({ onLoginSuccess }) => {
   const handleRequestCodeSubmit = async (e) => {
     e.preventDefault();
     if (!recoveryForm.email) return;
-    const res = await requestResetCode(recoveryForm.email);
+    const res = await solicitarCodigoRecuperacion(recoveryForm.email);
     if (res.success) {
       if (res.dev_otp) {
         setRecoveryForm((prev) => ({ ...prev, otp: res.dev_otp }));
@@ -112,7 +112,7 @@ export const CU01_LoginView = ({ onLoginSuccess }) => {
   const handleVerifyOtpSubmit = async (e) => {
     e.preventDefault();
     if (!recoveryForm.otp || recoveryForm.otp.length !== 6) return;
-    const res = await verifyCode(recoveryForm.email, recoveryForm.otp);
+    const res = await verificarCodigo(recoveryForm.email, recoveryForm.otp);
     if (res.success) {
       setRecoveryForm((prev) => ({ ...prev, resetTicket: res.resetTicket }));
       changeView('recovery_new_password');
@@ -124,7 +124,7 @@ export const CU01_LoginView = ({ onLoginSuccess }) => {
     e.preventDefault();
     if (!passwordRequirements.isAllValid) return;
 
-    const res = await submitNewPassword(
+    const res = await restablecerContrasena(
       recoveryForm.email,
       recoveryForm.resetTicket,
       recoveryForm.newPassword,
