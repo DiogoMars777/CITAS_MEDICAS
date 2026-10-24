@@ -1,0 +1,344 @@
+@startuml ClinicaVidaSalud_DB
+
+!theme plain
+skinparam linetype ortho
+skinparam roundcorner 6
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    BorderColor #2D3748
+    ArrowColor #4A5568
+    HeaderBackgroundColor #EDF2F7
+}
+
+' ==========================================================
+' MÓDULO 1: SEGURIDAD, ROLES Y USUARIOS
+' ==========================================================
+entity "roles" as roles {
+    * id_rol : INT <<PK, auto>>
+    --
+    * nombre_rol : VARCHAR(30) <<UQ>>
+    descripcion : VARCHAR(150)
+    * activo : BOOLEAN
+    * fecha_creacion : TIMESTAMP
+}
+
+entity "permisos" as permisos {
+    * id_permiso : INT <<PK, auto>>
+    --
+    * modulo : VARCHAR(50)
+    * nombre_permiso : VARCHAR(50) <<UQ>>
+    descripcion : VARCHAR(150)
+}
+
+entity "rol_permisos" as rol_permisos {
+    * id_rol : INT <<PK, FK>>
+    * id_permiso : INT <<PK, FK>>
+}
+
+entity "usuarios" as usuarios {
+    * id_usuario : BIGINT <<PK, auto>>
+    --
+    * id_rol : INT <<FK>>
+    * username : VARCHAR(50) <<UQ>>
+    * email : VARCHAR(100) <<UQ>>
+    * password_hash : VARCHAR(255)
+    * estado : VARCHAR(20)
+    ultimo_login : TIMESTAMP
+    * fecha_creacion : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+}
+
+' ==========================================================
+' MÓDULO 2: PACIENTES Y CONTACTOS DE EMERGENCIA
+' ==========================================================
+entity "pacientes" as pacientes {
+    * id_paciente : BIGINT <<PK, auto>>
+    --
+    id_usuario : BIGINT <<FK, UQ, NULL>>
+    ci : VARCHAR(20) <<UQ>>
+    * nombres : VARCHAR(80)
+    * apellidos : VARCHAR(80)
+    * fecha_nacimiento : DATE
+    * sexo : VARCHAR(10)
+    telefono : VARCHAR(25)
+    email : VARCHAR(100)
+    direccion : VARCHAR(200)
+    * primera_visita : BOOLEAN
+    * estado : VARCHAR(20)
+    * fecha_creacion : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+}
+
+entity "contactos_emergencia" as contactos_emergencia {
+    * id_contacto : BIGINT <<PK, auto>>
+    --
+    * id_paciente : BIGINT <<FK>>
+    * nombre_completo : VARCHAR(120)
+    * parentesco : VARCHAR(40)
+    * telefono : VARCHAR(25)
+    direccion : VARCHAR(200)
+}
+
+' ==========================================================
+' MÓDULO 3: HISTORIAS CLÍNICAS Y ATENCIONES MÉDICAS
+' ==========================================================
+entity "historias_clinicas" as historias_clinicas {
+    * id_historia_clinica : BIGINT <<PK, auto>>
+    --
+    * id_paciente : BIGINT <<FK, UQ>>
+    * numero_expediente : VARCHAR(30) <<UQ>>
+    tipo_sangre : VARCHAR(5)
+    alergias_medicamentos : TEXT
+    enfermedades_hereditarias : TEXT
+    antecedentes_patologicos : TEXT
+    antecedentes_quirurgicos : TEXT
+    * fecha_apertura : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+}
+
+entity "atenciones_medicas" as atenciones_medicas {
+    * id_atencion : BIGINT <<PK, auto>>
+    --
+    * id_cita : BIGINT <<FK, UQ>>
+    * id_historia_clinica : BIGINT <<FK>>
+    * id_medico : BIGINT <<FK>>
+    * motivo_consulta : VARCHAR(255)
+    sintomas : TEXT
+    diagnostico_cie10 : VARCHAR(20)
+    * diagnostico_descripcion : TEXT
+    tratamiento : TEXT
+    receta_medica : TEXT
+    * fecha_atencion : TIMESTAMP
+    * fecha_creacion : TIMESTAMP
+}
+
+' ==========================================================
+' MÓDULO 4: MÉDICOS Y ESPECIALIDADES
+' ==========================================================
+entity "especialidades" as especialidades {
+    * id_especialidad : INT <<PK, auto>>
+    --
+    * nombre : VARCHAR(80) <<UQ>>
+    descripcion : VARCHAR(255)
+    * estado : VARCHAR(20)
+}
+
+entity "medicos" as medicos {
+    * id_medico : BIGINT <<PK, auto>>
+    --
+    * id_usuario : BIGINT <<FK, UQ>>
+    * numero_registro_profesional : VARCHAR(40) <<UQ>>
+    * nombres : VARCHAR(80)
+    * apellidos : VARCHAR(80)
+    * telefono : VARCHAR(25)
+    * email : VARCHAR(100)
+    * estado : VARCHAR(20)
+    * fecha_ingreso : DATE
+}
+
+entity "medico_especialidades" as medico_especialidades {
+    * id_medico : BIGINT <<PK, FK>>
+    * id_especialidad : INT <<PK, FK>>
+    --
+    * es_principal : BOOLEAN
+}
+
+' ==========================================================
+' MÓDULO 5: HORARIOS, TURNOS Y BLOQUEOS DE AGENDA
+' ==========================================================
+entity "turnos_medicos" as turnos_medicos {
+    * id_turno : BIGINT <<PK, auto>>
+    --
+    * id_medico : BIGINT <<FK>>
+    * dia_semana : SMALLINT
+    * hora_inicio : TIME
+    * hora_fin : TIME
+    * duracion_bloque_min : INT
+    * estado : VARCHAR(20)
+}
+
+entity "bloqueos_agenda" as bloqueos_agenda {
+    * id_bloqueo : BIGINT <<PK, auto>>
+    --
+    * id_medico : BIGINT <<FK>>
+    * fecha_inicio : DATE
+    * hora_inicio : TIME
+    * fecha_fin : DATE
+    * hora_fin : TIME
+    * motivo : VARCHAR(255)
+    * todo_el_dia : BOOLEAN
+    * creado_por : BIGINT <<FK>>
+    * fecha_creacion : TIMESTAMP
+}
+
+' ==========================================================
+' MÓDULO 6: CITAS MÉDICAS, RESERVAS Y CONTROL DE CONCURRENCIA
+' ==========================================================
+entity "citas" as citas {
+    * id_cita : BIGINT <<PK, auto>>
+    --
+    * codigo_cita : VARCHAR(30) <<UQ>>
+    * id_paciente : BIGINT <<FK>>
+    * id_medico : BIGINT <<FK>>
+    * id_especialidad : INT <<FK>>
+    * fecha_cita : DATE
+    * hora_inicio : TIME
+    * hora_fin : TIME
+    * motivo_consulta : VARCHAR(255)
+    * estado_cita : VARCHAR(20)
+    * creado_por : BIGINT <<FK>>
+    * fecha_creacion : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+}
+
+entity "reservas" as reservas {
+    * id_reserva : BIGINT <<PK, auto>>
+    --
+    * id_cita : BIGINT <<FK, UQ>>
+    * id_paciente : BIGINT <<FK>>
+    * token_reserva : VARCHAR(100) <<UQ>>
+    * fecha_expiracion : TIMESTAMP
+    * estado_reserva : VARCHAR(20)
+}
+
+' ==========================================================
+' MÓDULO 7: HISTORIAL DE REPROGRAMACIONES Y CANCELACIONES
+' ==========================================================
+entity "historial_reprogramaciones" as historial_reprogramaciones {
+    * id_reprogramacion : BIGINT <<PK, auto>>
+    --
+    * id_cita : BIGINT <<FK>>
+    * fecha_anterior : DATE
+    * hora_inicio_anterior : TIME
+    * hora_fin_anterior : TIME
+    * id_medico_anterior : BIGINT <<FK>>
+    * fecha_nueva : DATE
+    * hora_inicio_nueva : TIME
+    * hora_fin_nueva : TIME
+    * id_medico_nuevo : BIGINT <<FK>>
+    * motivo_reprogramacion : TEXT
+    * id_usuario_responsable : BIGINT <<FK>>
+    * fecha_operacion : TIMESTAMP
+}
+
+entity "cancelaciones_citas" as cancelaciones_citas {
+    * id_cancelacion : BIGINT <<PK, auto>>
+    --
+    * id_cita : BIGINT <<FK, UQ>>
+    * motivo_cancelacion : TEXT
+    * id_usuario_responsable : BIGINT <<FK>>
+    * fecha_cancelacion : TIMESTAMP
+}
+
+' ==========================================================
+' MÓDULO 8: ESTUDIOS Y RESULTADOS DE LABORATORIO
+' ==========================================================
+entity "laboratorios_estudios" as laboratorios_estudios {
+    * id_estudio : BIGINT <<PK, auto>>
+    --
+    * codigo_estudio : VARCHAR(30) <<UQ>>
+    * id_paciente : BIGINT <<FK>>
+    * id_medico_solicitante : BIGINT <<FK>>
+    id_cita : BIGINT <<FK, NULL>>
+    * nombre_estudio : VARCHAR(120)
+    * tipo_estudio : VARCHAR(80)
+    descripcion : TEXT
+    * fecha_solicitud : TIMESTAMP
+    * estado : VARCHAR(20)
+    resultado_diagnostico : TEXT
+    archivo_resultado_url : VARCHAR(255)
+    publicado_en : TIMESTAMP
+}
+
+' ==========================================================
+' MÓDULO 9: RECORDATORIOS Y NOTIFICACIONES
+' ==========================================================
+entity "recordatorios" as recordatorios {
+    * id_recordatorio : BIGINT <<PK, auto>>
+    --
+    * id_cita : BIGINT <<FK>>
+    * tipo_canal : VARCHAR(20)
+    * fecha_programada : TIMESTAMP
+    fecha_envio : TIMESTAMP
+    * estado_envio : VARCHAR(20)
+    * intentos : INT
+    * mensaje : TEXT
+}
+
+' ==========================================================
+' MÓDULO 10: BITÁCORA DE AUDITORÍA
+' ==========================================================
+entity "bitacora_auditoria" as bitacora_auditoria {
+    * id_bitacora : BIGINT <<PK, auto>>
+    --
+    id_usuario : BIGINT <<FK, NULL>>
+    * modulo : VARCHAR(50)
+    * tabla_afectada : VARCHAR(50)
+    * id_registro_afectado : BIGINT
+    * operacion : VARCHAR(30)
+    valores_anteriores : JSONB
+    valores_nuevos : JSONB
+    direccion_ip : VARCHAR(45)
+    user_agent : TEXT
+    * fecha_creacion : TIMESTAMP
+}
+
+' ==========================================================
+' RELACIONES (CARDINALIDAD)
+' ==========================================================
+
+' Seguridad y Usuarios
+roles ||--o{ usuarios : "asigna rol"
+roles ||--o{ rol_permisos : "posee"
+permisos ||--o{ rol_permisos : "asignado a"
+
+' Pacientes y Contactos
+usuarios ||--o| pacientes : "cuenta digital"
+pacientes ||--o{ contactos_emergencia : "registra"
+pacientes ||--|| historias_clinicas : "tiene única"
+
+' Médicos y Especialidades
+usuarios ||--o| medicos : "perfil profesional"
+medicos ||--o{ medico_especialidades : "ejerce"
+especialidades ||--o{ medico_especialidades : "abarca"
+
+' Horarios y Bloqueos
+medicos ||--o{ turnos_medicos : "configura turnos"
+medicos ||--o{ bloqueos_agenda : "bloquea"
+usuarios ||--o{ bloqueos_agenda : "creado por"
+
+' Citas y Reservas
+pacientes ||--o{ citas : "solicita"
+medicos ||--o{ citas : "atiende"
+especialidades ||--o{ citas : "categoriza"
+usuarios ||--o{ citas : "creado por"
+citas ||--o| reservas : "controla concurrencia"
+
+' Atenciones y Diagnósticos
+citas ||--o| atenciones_medicas : "genera al atender"
+historias_clinicas ||--o{ atenciones_medicas : "acumula"
+medicos ||--o{ atenciones_medicas : "registra diagnóstico"
+
+' Reprogramaciones y Cancelaciones
+citas ||--o{ historial_reprogramaciones : "registra cambios"
+medicos ||--o{ historial_reprogramaciones : "médico anterior"
+medicos ||--o{ historial_reprogramaciones : "médico nuevo"
+usuarios ||--o{ historial_reprogramaciones : "autorizado por"
+citas ||--o| cancelaciones_citas : "motivo de anulación"
+usuarios ||--o{ cancelaciones_citas : "cancelado por"
+
+' Laboratorios
+pacientes ||--o{ laboratorios_estudios : "pertenece a"
+medicos ||--o{ laboratorios_estudios : "solicita estudio"
+citas ||--o{ laboratorios_estudios : "vinculado a cita"
+
+' Recordatorios
+citas ||--o{ recordatorios : "programa avisos"
+
+' Auditoría
+usuarios ||--o{ bitacora_auditoria : "ejecuta acción"
+
+@enduml
