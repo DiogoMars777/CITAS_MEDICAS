@@ -1,12 +1,15 @@
 ' ==============================================================================
 ' CLÍNICA VIDA SALUD - DIAGRAMAS DE ANÁLISIS DE CLASES (CU01 AL CU12)
 ' Estilo: Enterprise Architect (Actor - Boundary - Control - Entity)
-' Controladores actualizados con métodos canónicos del backend y PostgreSQL 16
+' Controladores sin prefijo CU y cardinalidades nítidas con ortogonalidad
 ' ==============================================================================
 
 @startuml cu01_analisis_iniciar_cerrar_sesion
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -27,7 +30,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU01 Iniciar y cerrar sesión" {
+frame "sd CU01 Iniciar y cerrar sesión" {
     actor "Usuario / Administrador" as UserActor
     
     class UI_Sesion {
@@ -39,7 +42,7 @@ frame "sd Diagrama de análisis de clases - CU01 Iniciar y cerrar sesión" {
         + obtenerUsuarioActual(): void
     }
 
-    class CU01_AutenticacionController {
+    class AutenticacionController {
         + iniciarSesion(Request): JsonResponse
         + solicitarRecuperacion(Request): JsonResponse
         + verificarCodigoOtp(Request): JsonResponse
@@ -95,17 +98,20 @@ frame "sd Diagrama de análisis de clases - CU01 Iniciar y cerrar sesión" {
     }
 
     UserActor -right- UI_Sesion
-    UI_Sesion -right- CU01_AutenticacionController
-    CU01_AutenticacionController -right- Usuario
+    UI_Sesion -right- AutenticacionController
+    AutenticacionController -right- Usuario
 
-    Usuario "0..*" -up- "1" Rol
-    Usuario "1" -right- "0..*" BitacoraAuditoria
+    Usuario "0..*" ---up--- "1" Rol
+    Usuario "1" ---right--- "0..*" BitacoraAuditoria
 }
 @enduml
 
 @startuml cu02_analisis_consultar_bitacora
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -126,7 +132,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU02 Consultar bitácora de auditoría" {
+frame "sd CU02 Consultar bitácora de auditoría" {
     actor Administrador
     
     class UI_Auditoria {
@@ -136,7 +142,7 @@ frame "sd Diagrama de análisis de clases - CU02 Consultar bitácora de auditor�
         + consultarEstadisticas(): void
     }
 
-    class CU02_BitacoraAuditoriaController {
+    class BitacoraAuditoriaController {
         + listarAuditoria(Request): JsonResponse
         + obtenerDetalleAuditoria(id: int): JsonResponse
         + estadisticasAuditoria(): JsonResponse
@@ -176,16 +182,19 @@ frame "sd Diagrama de análisis de clases - CU02 Consultar bitácora de auditor�
     }
 
     Administrador -right- UI_Auditoria
-    UI_Auditoria -right- CU02_BitacoraAuditoriaController
-    CU02_BitacoraAuditoriaController -right- BitacoraAuditoria
+    UI_Auditoria -right- BitacoraAuditoriaController
+    BitacoraAuditoriaController -right- BitacoraAuditoria
 
-    BitacoraAuditoria "0..*" -right- "0..1" Usuario
+    BitacoraAuditoria "0..*" ---right--- "0..1" Usuario
 }
 @enduml
 
 @startuml cu03_analisis_gestionar_usuarios_roles
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -206,7 +215,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU03 Gestionar usuarios, roles y permisos" {
+frame "sd CU03 Gestionar usuarios, roles y permisos" {
     actor Administrador
     
     class UI_GestionUsuarios {
@@ -217,7 +226,7 @@ frame "sd Diagrama de análisis de clases - CU03 Gestionar usuarios, roles y per
         + gestionarPermisosRol(): void
     }
 
-    class CU03_GestionUsuariosController {
+    class GestionUsuariosController {
         + listarUsuarios(Request): JsonResponse
         + crearUsuario(Request): JsonResponse
         + obtenerUsuario(id: int): JsonResponse
@@ -274,18 +283,21 @@ frame "sd Diagrama de análisis de clases - CU03 Gestionar usuarios, roles y per
     }
 
     Administrador -right- UI_GestionUsuarios
-    UI_GestionUsuarios -right- CU03_GestionUsuariosController
-    CU03_GestionUsuariosController -right- Usuario
+    UI_GestionUsuarios -right- GestionUsuariosController
+    GestionUsuariosController -right- Usuario
 
-    Usuario "0..*" -right- "1" Rol
-    Rol "1" -right- "0..*" RolPermiso
-    RolPermiso "0..*" -right- "1" Permiso
+    Usuario "0..*" ---up--- "1" Rol
+    Rol "1" ---right--- "0..*" RolPermiso
+    RolPermiso "0..*" ---right--- "1" Permiso
 }
 @enduml
 
 @startuml cu04_analisis_gestionar_especialidades
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -306,7 +318,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU04 Gestionar especialidades médicas" {
+frame "sd CU04 Gestionar especialidades médicas" {
     actor Administrador
     
     class UI_Especialidad {
@@ -316,7 +328,7 @@ frame "sd Diagrama de análisis de clases - CU04 Gestionar especialidades médic
         + cambiarEstado(): void
     }
 
-    class CU04_EspecialidadController {
+    class EspecialidadController {
         + index(Request): JsonResponse
         + store(Request): JsonResponse
         + show(id: int): JsonResponse
@@ -356,17 +368,20 @@ frame "sd Diagrama de análisis de clases - CU04 Gestionar especialidades médic
     }
 
     Administrador -right- UI_Especialidad
-    UI_Especialidad -right- CU04_EspecialidadController
-    CU04_EspecialidadController -right- Especialidad
+    UI_Especialidad -right- EspecialidadController
+    EspecialidadController -right- Especialidad
 
-    Especialidad "1" -right- "0..*" MedicoEspecialidad
-    MedicoEspecialidad "0..*" -right- "1" Medico
+    Especialidad "1" ---right--- "0..*" MedicoEspecialidad
+    MedicoEspecialidad "0..*" ---right--- "1" Medico
 }
 @enduml
 
 @startuml cu05_analisis_gestionar_medicos
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -387,7 +402,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU05 Gestionar médicos y asignaciones" {
+frame "sd CU05 Gestionar médicos y asignaciones" {
     actor Administrador
     
     class UI_Medico {
@@ -398,7 +413,7 @@ frame "sd Diagrama de análisis de clases - CU05 Gestionar médicos y asignacion
         + cambiarEstado(): void
     }
 
-    class CU05_MedicoController {
+    class MedicoController {
         + index(Request): JsonResponse
         + meta(): JsonResponse
         + store(Request): JsonResponse
@@ -454,18 +469,21 @@ frame "sd Diagrama de análisis de clases - CU05 Gestionar médicos y asignacion
     }
 
     Administrador -right- UI_Medico
-    UI_Medico -right- CU05_MedicoController
-    CU05_MedicoController -right- Medico
+    UI_Medico -right- MedicoController
+    MedicoController -right- Medico
 
-    Medico "1" -up- "0..1" Usuario
-    Medico "1" -right- "1..*" MedicoEspecialidad
-    MedicoEspecialidad "0..*" -right- "1" Especialidad
+    Medico "1" ---up--- "0..1" Usuario
+    Medico "1" ---right--- "1..*" MedicoEspecialidad
+    MedicoEspecialidad "0..*" ---down--- "1" Especialidad
 }
 @enduml
 
 @startuml cu06_analisis_registrar_paciente
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -486,7 +504,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU06 Registrar y gestionar pacientes" {
+frame "sd CU06 Registrar y gestionar pacientes" {
     actor "Recepcionista / Administrador" as Recep
     
     class UI_Paciente {
@@ -497,7 +515,7 @@ frame "sd Diagrama de análisis de clases - CU06 Registrar y gestionar pacientes
         + cambiarEstado(): void
     }
 
-    class CU06_PacienteController {
+    class PacienteController {
         + index(Request): JsonResponse
         + store(Request): JsonResponse
         + show(id: int): JsonResponse
@@ -556,17 +574,20 @@ frame "sd Diagrama de análisis de clases - CU06 Registrar y gestionar pacientes
     }
 
     Recep -right- UI_Paciente
-    UI_Paciente -right- CU06_PacienteController
-    CU06_PacienteController -right- Paciente
+    UI_Paciente -right- PacienteController
+    PacienteController -right- Paciente
 
-    Paciente "1" -right- "1" HistoriaClinica
-    Paciente "1" -down- "0..1" ContactoEmergencia
+    Paciente "1" ---right--- "1" HistoriaClinica
+    Paciente "1" ---down--- "0..1" ContactoEmergencia
 }
 @enduml
 
 @startuml cu07_analisis_configurar_turnos
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -587,7 +608,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU07 Configurar turnos y fraccionamiento de agenda" {
+frame "sd CU07 Configurar turnos y fraccionamiento de agenda" {
     actor "Administrador / Recepción" as Admin
     
     class UI_TurnoMedico {
@@ -598,7 +619,7 @@ frame "sd Diagrama de análisis de clases - CU07 Configurar turnos y fraccionami
         + cambiarEstado(): void
     }
 
-    class CU07_TurnoMedicoController {
+    class TurnoMedicoController {
         + index(Request): JsonResponse
         + meta(): JsonResponse
         + store(Request): JsonResponse
@@ -642,17 +663,20 @@ frame "sd Diagrama de análisis de clases - CU07 Configurar turnos y fraccionami
     }
 
     Admin -right- UI_TurnoMedico
-    UI_TurnoMedico -right- CU07_TurnoMedicoController
-    CU07_TurnoMedicoController -right- TurnoMedico
+    UI_TurnoMedico -right- TurnoMedicoController
+    TurnoMedicoController -right- TurnoMedico
 
-    TurnoMedico "0..*" -right- "1" Medico
-    Medico "0..*" -up- "1..*" Especialidad
+    TurnoMedico "0..*" ---right--- "1" Medico
+    Medico "0..*" ---up--- "1..*" Especialidad
 }
 @enduml
 
 @startuml cu08_analisis_bloqueos_agenda
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -673,7 +697,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU08 Registrar bloqueos de agenda médica" {
+frame "sd CU08 Registrar bloqueos de agenda médica" {
     actor "Administrador / Recepción" as Admin
     
     class UI_BloqueoAgenda {
@@ -682,7 +706,7 @@ frame "sd Diagrama de análisis de clases - CU08 Registrar bloqueos de agenda m�
         + eliminarBloqueo(): void
     }
 
-    class CU08_BloqueoAgendaController {
+    class BloqueoAgendaController {
         + index(Request): JsonResponse
         + meta(): JsonResponse
         + store(Request): JsonResponse
@@ -729,17 +753,20 @@ frame "sd Diagrama de análisis de clases - CU08 Registrar bloqueos de agenda m�
     }
 
     Admin -right- UI_BloqueoAgenda
-    UI_BloqueoAgenda -right- CU08_BloqueoAgendaController
-    CU08_BloqueoAgendaController -right- BloqueoAgenda
+    UI_BloqueoAgenda -right- BloqueoAgendaController
+    BloqueoAgendaController -right- BloqueoAgenda
 
-    BloqueoAgenda "0..*" -right- "1" Medico
-    Medico "1" -down- "0..*" Cita
+    BloqueoAgenda "0..*" ---right--- "1" Medico
+    Medico "1" ---down--- "0..*" Cita
 }
 @enduml
 
 @startuml cu09_analisis_consultar_disponibilidad
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -760,7 +787,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU09 Consultar disponibilidad de horarios médicos" {
+frame "sd CU09 Consultar disponibilidad de horarios médicos" {
     actor "Paciente / Recepción" as UsuarioActor
     
     class UI_Disponibilidad {
@@ -769,7 +796,7 @@ frame "sd Diagrama de análisis de clases - CU09 Consultar disponibilidad de hor
         + verCalendarioQuincenal(): void
     }
 
-    class CU09_DisponibilidadController {
+    class DisponibilidadController {
         + meta(Request): JsonResponse
         + consultar(Request): JsonResponse
     }
@@ -821,18 +848,21 @@ frame "sd Diagrama de análisis de clases - CU09 Consultar disponibilidad de hor
     }
 
     UsuarioActor -right- UI_Disponibilidad
-    UI_Disponibilidad -right- CU09_DisponibilidadController
-    CU09_DisponibilidadController -right- TurnoMedico
+    UI_Disponibilidad -right- DisponibilidadController
+    DisponibilidadController -right- TurnoMedico
 
-    TurnoMedico "0..*" -up- "1" Medico
-    Medico "1" -right- "0..*" Cita
-    Medico "1" -down- "0..*" BloqueoAgenda
+    TurnoMedico "0..*" ---right--- "1" Medico
+    Medico "1" ---up--- "0..*" Cita
+    Medico "1" ---down--- "0..*" BloqueoAgenda
 }
 @enduml
 
 @startuml cu10_analisis_reservar_cita_medica
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -853,7 +883,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU10 Reservar cita médica con control de concurrencia" {
+frame "sd CU10 Reservar cita médica con control de concurrencia" {
     actor "Paciente / Recepcionista" as ActorReserva
     
     class UI_ReservaCita {
@@ -862,7 +892,7 @@ frame "sd Diagrama de análisis de clases - CU10 Reservar cita médica con contr
         + generarComprobante(): void
     }
 
-    class CU10_ReservaCitaController {
+    class ReservaCitaController {
         + meta(Request): JsonResponse
         + index(Request): JsonResponse
         + store(Request): JsonResponse
@@ -927,19 +957,22 @@ frame "sd Diagrama de análisis de clases - CU10 Reservar cita médica con contr
     }
 
     ActorReserva -right- UI_ReservaCita
-    UI_ReservaCita -right- CU10_ReservaCitaController
-    CU10_ReservaCitaController -right- Cita
+    UI_ReservaCita -right- ReservaCitaController
+    ReservaCitaController -right- Cita
 
-    Cita "0..*" -up- "1" Paciente
-    Cita "0..*" -down- "1" Medico
-    Cita "0..*" -left- "1" Especialidad
-    Medico "1" -right- "0..*" BloqueoAgenda
+    Cita "0..*" ---up--- "1" Paciente
+    Cita "0..*" ---down--- "1" Medico
+    Cita "0..*" ---right--- "1" Especialidad
+    Medico "1" ---right--- "0..*" BloqueoAgenda
 }
 @enduml
 
 @startuml cu11_analisis_reprogramar_cita
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -960,7 +993,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU11 Reprogramar cita médica" {
+frame "sd CU11 Reprogramar cita médica" {
     actor "Paciente / Recepcionista" as ActorReprog
     
     class UI_ReprogramacionCita {
@@ -969,7 +1002,7 @@ frame "sd Diagrama de análisis de clases - CU11 Reprogramar cita médica" {
         + consultarHistorial(): void
     }
 
-    class CU11_ReprogramacionController {
+    class ReprogramacionController {
         + reprogramarCita(Request, id: int): JsonResponse
         + historial(id: int): JsonResponse
     }
@@ -1027,18 +1060,21 @@ frame "sd Diagrama de análisis de clases - CU11 Reprogramar cita médica" {
     }
 
     ActorReprog -right- UI_ReprogramacionCita
-    UI_ReprogramacionCita -right- CU11_ReprogramacionController
-    CU11_ReprogramacionController -right- Cita
+    UI_ReprogramacionCita -right- ReprogramacionController
+    ReprogramacionController -right- Cita
 
-    Cita "1" -right- "0..*" HistorialReprogramacion
-    Cita "0..*" -down- "1" Medico
-    Medico "1" -down- "0..*" BloqueoAgenda
+    Cita "1" ---right--- "0..*" HistorialReprogramacion
+    Cita "0..*" ---down--- "1" Medico
+    Medico "1" ---right--- "0..*" BloqueoAgenda
 }
 @enduml
 
 @startuml cu12_analisis_cancelar_cita
 allowmixing
 
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 60
 skinparam backgroundColor white
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -1059,7 +1095,7 @@ skinparam actor {
     BorderColor #A80036
 }
 
-frame "sd Diagrama de análisis de clases - CU12 Cancelar cita médica" {
+frame "sd CU12 Cancelar cita médica" {
     actor "Paciente / Recepcionista" as ActorCanc
     
     class UI_CancelacionCita {
@@ -1068,7 +1104,7 @@ frame "sd Diagrama de análisis de clases - CU12 Cancelar cita médica" {
         + liberarCupo(): void
     }
 
-    class CU12_CancelacionController {
+    class CancelacionController {
         + cancelarCita(Request, id: int): JsonResponse
         + detalleCancelacion(id: int): JsonResponse
     }
@@ -1117,12 +1153,12 @@ frame "sd Diagrama de análisis de clases - CU12 Cancelar cita médica" {
     }
 
     ActorCanc -right- UI_CancelacionCita
-    UI_CancelacionCita -right- CU12_CancelacionController
-    CU12_CancelacionController -right- Cita
+    UI_CancelacionCita -right- CancelacionController
+    CancelacionController -right- Cita
 
-    Cita "1" -right- "1" CancelacionCita
-    Cita "0..*" -up- "1" Paciente
-    Cita "0..*" -down- "1" Medico
+    Cita "1" ---right--- "1" CancelacionCita
+    Cita "0..*" ---up--- "1" Paciente
+    Cita "0..*" ---down--- "1" Medico
 }
 @enduml
 
