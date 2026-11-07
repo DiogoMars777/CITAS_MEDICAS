@@ -29,7 +29,7 @@ class CU23_AsistenteVozService
     {
         $mensajeLimpio = trim($mensaje);
         $apiKey = env('GEMINI_API_KEY');
-        $modelo = env('GEMINI_MODEL', 'gemini-2.5-flash');
+        $modelo = env('GEMINI_MODEL', 'gemini-3.5-flash');
 
         $interpretacion = null;
         $motorUsado = 'LOCAL';
@@ -130,9 +130,9 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelo}:generateContent?key={$apiKey}";
 
-        $response = Http::withHeaders([
+        $response = Http::withoutVerifying()->withHeaders([
             'Content-Type' => 'application/json',
-        ])->timeout(12)->post($url, [
+        ])->timeout(15)->post($url, [
             'contents' => [
                 [
                     'role' => 'user',
@@ -165,9 +165,27 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
             return null;
         }
 
-        $parsed = json_decode($rawText, true);
+        // Limpiar posibles bloques ```json ... ``` devueltos por LLM
+        $cleanJson = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', trim($rawText));
+        $cleanJson = trim($cleanJson);
+
+        $parsed = json_decode($cleanJson, true);
         if (!is_array($parsed) || empty($parsed['especialidad'])) {
             return null;
+        }
+
+        // Mapear campos alternativos devueltos por Gemini
+        if (empty($parsed['guion_voz']) && !empty($parsed['respuesta'])) {
+            $parsed['guion_voz'] = $parsed['respuesta'];
+        }
+        if (empty($parsed['turno_preferido']) && !empty($parsed['preferencia_horario'])) {
+            $parsed['turno_preferido'] = $parsed['preferencia_horario'];
+        }
+        if (!empty($parsed['turno_preferido'])) {
+            $tpUpper = mb_strtoupper($parsed['turno_preferido']);
+            if (str_contains($tpUpper, 'TARDE')) $parsed['turno_preferido'] = 'TARDE';
+            elseif (str_contains($tpUpper, 'MAÑANA')) $parsed['turno_preferido'] = 'MAÑANA';
+            else $parsed['turno_preferido'] = 'CUALQUIERA';
         }
 
         // Validar que la especialidad exista en las disponibles; si no, ajustar a la más cercana o Medicina General

@@ -107,3 +107,4 @@ export const CU23_AsistenteVozModel = {
 };
 
 export default CU23_AsistenteVozModel;
+

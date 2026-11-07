@@ -198,3 +198,4 @@ class CU23_AsistenteVozController extends Controller
         ]);
     }
 }
+
