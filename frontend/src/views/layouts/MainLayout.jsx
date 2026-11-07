@@ -58,10 +58,13 @@ export const MainLayout = ({ currentUser, onLogout }) => {
   const [activeCUId, setActiveCUId] = useState('CU03');
   const [selectedCitaForCU16, setSelectedCitaForCU16] = useState(2);
 
+  // Rol activo (permite simular y cambiar de rol en vivo: ADMINISTRADOR, MEDICO, RECEPCIONISTA, PACIENTE)
+  const [rolActivo, setRolActivo] = useState(currentUser?.rol || 'ADMINISTRADOR');
+
   // Control de apertura en móvil
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Paquetes expandidos en el acordeón (por defecto PKG01, PKG04, PKG05, PKG06, PKG07, PKG08 expandidos)
+  // Paquetes expandidos en el acordeón
   const [expandedPackages, setExpandedPackages] = useState({
     PKG01: true,
     PKG04: true,
@@ -82,8 +85,62 @@ export const MainLayout = ({ currentUser, onLogout }) => {
     }));
   };
 
-  // Paquetes y casos de uso
-  const filteredPackages = PACKAGES_CONFIG;
+  // Filtrar paquetes y casos de uso según el rol activo (Control de Acceso Basado en Roles - RBAC)
+  const filteredPackages = useMemo(() => {
+    const rol = (rolActivo || 'ADMINISTRADOR').toUpperCase();
+
+    if (rol === 'ADMINISTRADOR' || rol === 'ADMIN') {
+      return PACKAGES_CONFIG;
+    }
+
+    return PACKAGES_CONFIG.map((pkg) => {
+      const casosPermitidos = pkg.casosDeUso.filter((cu) => {
+        const actores = (cu.actores || '').toLowerCase();
+        if (actores.includes('todos')) return true;
+        if (rol === 'MEDICO' && (actores.includes('médico') || actores.includes('medico'))) return true;
+        if (rol === 'RECEPCIONISTA' && (actores.includes('recepcionista') || actores.includes('recepcion'))) return true;
+        if ((rol === 'PACIENTE' || rol === 'CLIENTE') && actores.includes('paciente')) return true;
+        return false;
+      });
+
+      return {
+        ...pkg,
+        casosDeUso: casosPermitidos,
+      };
+    }).filter((pkg) => pkg.casosDeUso.length > 0);
+  }, [rolActivo]);
+
+  // Cambiar de rol en vivo para verificar permisos
+  const handleCambioRol = (nuevoRol) => {
+    setRolActivo(nuevoRol);
+    const rolUpper = nuevoRol.toUpperCase();
+
+    // Redirigir al caso de uso por defecto de ese rol
+    if (rolUpper === 'PACIENTE' || rolUpper === 'CLIENTE') {
+      setActiveCUId('CU10');
+      setExpandedPackages({ PKG04: true, PKG05: true, PKG07: true });
+    } else if (rolUpper === 'MEDICO') {
+      setActiveCUId('CU15');
+      setExpandedPackages({ PKG06: true, PKG07: true, PKG04: true });
+    } else if (rolUpper === 'RECEPCIONISTA') {
+      setActiveCUId('CU13');
+      setExpandedPackages({ PKG03: true, PKG05: true, PKG07: true, PKG08: true });
+    } else {
+      setActiveCUId('CU03');
+      setExpandedPackages({ PKG01: true, PKG04: true, PKG05: true, PKG06: true, PKG07: true, PKG08: true });
+    }
+  };
+
+  // Verificar si el caso de uso actual está permitido para el rol activo
+  const isCUAllowed = useMemo(() => {
+    const rol = (rolActivo || 'ADMINISTRADOR').toUpperCase();
+    if (rol === 'ADMINISTRADOR' || rol === 'ADMIN') return true;
+
+    for (const pkg of filteredPackages) {
+      if (pkg.casosDeUso.some((c) => c.id === activeCUId)) return true;
+    }
+    return false;
+  }, [filteredPackages, activeCUId, rolActivo]);
 
   // Obtener metadata del CU y Paquete activos
   const activeCUInfo = useMemo(() => {
@@ -439,6 +496,45 @@ export const MainLayout = ({ currentUser, onLogout }) => {
               <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 500 }}>(BOT)</span>
             </div>
 
+            {/* SELECTOR INTERACTIVO DE ROLES (RBAC EN VIVO) */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              background: '#ffffff',
+              padding: '0.3rem 0.65rem',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+            }}>
+              <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>Ver como:</span>
+              <select
+                value={rolActivo}
+                onChange={(e) => handleCambioRol(e.target.value)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  color: rolActivo === 'ADMINISTRADOR'
+                    ? '#0284c7'
+                    : rolActivo === 'MEDICO'
+                    ? '#ec4899'
+                    : rolActivo === 'RECEPCIONISTA'
+                    ? '#d97706'
+                    : '#059669',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+                title="Cambiar el rol activo para verificar los permisos de acceso"
+              >
+                <option value="ADMINISTRADOR">🛡️ Administrador (Acceso Total)</option>
+                <option value="MEDICO">🩺 Médico (Agenda y Consulta)</option>
+                <option value="RECEPCIONISTA">📋 Recepcionista (Citas y Sala)</option>
+                <option value="PACIENTE">👤 Paciente (Portal de Citas)</option>
+              </select>
+            </div>
+
             {/* USUARIO PILL */}
             <div style={{
               display: 'flex',
@@ -469,11 +565,23 @@ export const MainLayout = ({ currentUser, onLogout }) => {
                 fontSize: '0.68rem',
                 padding: '1px 6px',
                 borderRadius: '4px',
-                background: '#e0f2fe',
-                color: '#0284c7',
-                fontWeight: 700,
+                background: rolActivo === 'ADMINISTRADOR'
+                  ? '#e0f2fe'
+                  : rolActivo === 'MEDICO'
+                  ? '#fce7f3'
+                  : rolActivo === 'RECEPCIONISTA'
+                  ? '#fef3c7'
+                  : '#dcfce7',
+                color: rolActivo === 'ADMINISTRADOR'
+                  ? '#0284c7'
+                  : rolActivo === 'MEDICO'
+                  ? '#db2777'
+                  : rolActivo === 'RECEPCIONISTA'
+                  ? '#b45309'
+                  : '#15803d',
+                fontWeight: 800,
               }}>
-                {currentUser?.rol || 'ADMIN'}
+                {rolActivo}
               </span>
             </div>
 
@@ -515,96 +623,149 @@ export const MainLayout = ({ currentUser, onLogout }) => {
 
         {/* ÁREA DE CONTENIDO — CANVAS EJECUTIVO CLARO */}
         <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc', padding: '1.5rem' }}>
-          {activeCUId === 'CU21' && <CU21_ReportesView />}
+          {!isCUAllowed ? (
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #fed7aa',
+              borderRadius: '12px',
+              padding: '2.5rem 1.5rem',
+              textAlign: 'center',
+              maxWidth: '560px',
+              margin: '3rem auto',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            }}>
+              <div style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '12px',
+                background: '#fff7ed',
+                color: '#ea580c',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem',
+              }}>
+                <Shield size={28} />
+              </div>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#9a3412', margin: '0 0 0.5rem' }}>
+                Acceso Restringido por Perfil (RBAC)
+              </h2>
+              <p style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5, margin: '0 0 1.25rem' }}>
+                El módulo <strong>{activeCUInfo.cu?.numero}: {activeCUInfo.cu?.titulo}</strong> está reservado exclusivamente para los actores: <strong style={{ color: '#0f172a' }}>{activeCUInfo.cu?.actores}</strong>.
+                Su perfil activo actual es <strong style={{ color: '#0284c7' }}>{rolActivo}</strong>.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleCambioRol('ADMINISTRADOR')}
+                style={{
+                  padding: '0.55rem 1.25rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: '#ffffff',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)',
+                }}
+              >
+                Cambiar a Perfil Administrador (Acceso Total)
+              </button>
+            </div>
+          ) : (
+            <>
+              {activeCUId === 'CU21' && <CU21_ReportesView />}
 
-          {activeCUId === 'CU20' && (
-            <CU20_DashboardView
-              onNavigateToAgenda={() => {
-                setActiveCUId('CU15');
-                setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
-              }}
-              onNavigateToLaboratorios={() => {
-                setActiveCUId('CU18');
-                setExpandedPackages((prev) => ({ ...prev, PKG07: true }));
-              }}
-            />
-          )}
+              {activeCUId === 'CU20' && (
+                <CU20_DashboardView
+                  onNavigateToAgenda={() => {
+                    setActiveCUId('CU15');
+                    setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
+                  }}
+                  onNavigateToLaboratorios={() => {
+                    setActiveCUId('CU18');
+                    setExpandedPackages((prev) => ({ ...prev, PKG07: true }));
+                  }}
+                />
+              )}
 
-          {activeCUId === 'CU19' && <CU19_RecordatoriosView />}
+              {activeCUId === 'CU19' && <CU19_RecordatoriosView />}
 
-          {activeCUId === 'CU18' && <CU18_VisualizarEstudiosView />}
+              {activeCUId === 'CU18' && <CU18_VisualizarEstudiosView />}
 
-          {activeCUId === 'CU17' && (
-            <CU17_CargarEstudiosView
-              onNavigateToCU18={() => {
-                setActiveCUId('CU18');
-                setExpandedPackages((prev) => ({ ...prev, PKG07: true }));
-              }}
-            />
-          )}
+              {activeCUId === 'CU17' && (
+                <CU17_CargarEstudiosView
+                  onNavigateToCU18={() => {
+                    setActiveCUId('CU18');
+                    setExpandedPackages((prev) => ({ ...prev, PKG07: true }));
+                  }}
+                />
+              )}
 
-          {activeCUId === 'CU16' && (
-            <CU16_ConsultaMedicaView
-              initialCitaId={selectedCitaForCU16}
-              onBackToAgenda={() => {
-                setActiveCUId('CU15');
-                setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
-              }}
-            />
-          )}
+              {activeCUId === 'CU16' && (
+                <CU16_ConsultaMedicaView
+                  initialCitaId={selectedCitaForCU16}
+                  onBackToAgenda={() => {
+                    setActiveCUId('CU15');
+                    setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
+                  }}
+                />
+              )}
 
-          {activeCUId === 'CU15' && (
-            <CU15_AgendaMedicoView
-              onNavigateToCU16={(idCita) => {
-                setSelectedCitaForCU16(idCita);
-                setActiveCUId('CU16');
-                setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
-              }}
-            />
-          )}
+              {activeCUId === 'CU15' && (
+                <CU15_AgendaMedicoView
+                  onNavigateToCU16={(idCita) => {
+                    setSelectedCitaForCU16(idCita);
+                    setActiveCUId('CU16');
+                    setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
+                  }}
+                />
+              )}
 
-          {activeCUId === 'CU14' && <CU14_AntecedentesView />}
+              {activeCUId === 'CU14' && <CU14_AntecedentesView />}
 
-          {activeCUId === 'CU13' && <CU13_AsistenciaView />}
+              {activeCUId === 'CU13' && <CU13_AsistenciaView />}
 
-          {activeCUId === 'CU12' && <CU12_CancelarCitaView />}
+              {activeCUId === 'CU12' && <CU12_CancelarCitaView />}
 
-          {activeCUId === 'CU11' && <CU11_ReprogramarCitaView />}
+              {activeCUId === 'CU11' && <CU11_ReprogramarCitaView />}
 
-          {activeCUId === 'CU10' && <CU10_ReservarCitaView />}
+              {activeCUId === 'CU10' && <CU10_ReservarCitaView />}
 
-          {activeCUId === 'CU09' && <CU09_DisponibilidadView />}
+              {activeCUId === 'CU09' && <CU09_DisponibilidadView />}
 
-          {activeCUId === 'CU08' && <CU08_BloqueosView />}
+              {activeCUId === 'CU08' && <CU08_BloqueosView />}
 
-          {activeCUId === 'CU07' && <CU07_TurnosView />}
+              {activeCUId === 'CU07' && <CU07_TurnosView />}
 
-          {activeCUId === 'CU06' && <CU06_PacientesView />}
+              {activeCUId === 'CU06' && <CU06_PacientesView />}
 
-          {activeCUId === 'CU05' && <CU05_MedicosView />}
+              {activeCUId === 'CU05' && <CU05_MedicosView />}
 
-          {activeCUId === 'CU04' && <CU04_EspecialidadesView />}
+              {activeCUId === 'CU04' && <CU04_EspecialidadesView />}
 
-          {activeCUId === 'CU22' && <CU22_BackupView />}
+              {activeCUId === 'CU22' && <CU22_BackupView />}
 
-          {activeCUId === 'CU03' && <CU03_GestionUsuariosView />}
+              {activeCUId === 'CU03' && <CU03_GestionUsuariosView />}
 
-          {activeCUId === 'CU02' && <CU02_BitacoraView />}
+              {activeCUId === 'CU02' && <CU02_BitacoraView />}
 
-          {activeCUId === 'CU01' && (
-            <CU01_SessionView
-              currentUser={currentUser}
-              onLogout={onLogout}
-              onSwitchToLoginDemo={onLogout}
-            />
-          )}
+              {activeCUId === 'CU01' && (
+                <CU01_SessionView
+                  currentUser={currentUser}
+                  onLogout={onLogout}
+                  onSwitchToLoginDemo={onLogout}
+                />
+              )}
 
-          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21', 'CU22'].includes(activeCUId) && (
-            <SeniorCUPlaceholder
-              cu={activeCUInfo.cu}
-              pkg={activeCUInfo.pkg}
-              onNavigateToCU02={() => handleSelectCU('CU02', 'PKG01')}
-            />
+              {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21', 'CU22'].includes(activeCUId) && (
+                <SeniorCUPlaceholder
+                  cu={activeCUInfo.cu}
+                  pkg={activeCUInfo.pkg}
+                  onNavigateToCU02={() => handleSelectCU('CU02', 'PKG01')}
+                />
+              )}
+            </>
           )}
         </main>
       </div>
