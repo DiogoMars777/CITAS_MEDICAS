@@ -780,4 +780,65 @@ Generate-SequenceDiagram `
         }
     )
 
+# ==============================================================================
+# CU22: Copias de seguridad y restauración (Backup / Restore)
+# ==============================================================================
+Generate-SequenceDiagram `
+    -cuCode "CU22" `
+    -title "Gestión de copias de seguridad y restauración de base de datos" `
+    -lifelines @(
+        @{ Id = "Actor"; Name = "Administrador"; Type = "Actor"; X = 85 },
+        @{ Id = "UI"; Name = "UI_BackupRestore"; Type = "Boundary"; X = 320 },
+        @{ Id = "Ctrl"; Name = "BackupRestoreController"; Type = "Control"; X = 650 },
+        @{ Id = "Log"; Name = "BackupLog"; Type = "Entity"; X = 980 },
+        @{ Id = "DB"; Name = "BaseDeDatosPostgreSQL"; Type = "Entity"; X = 1240 },
+        @{ Id = "Aud"; Name = "BitacoraAuditoria"; Type = "Entity"; X = 1500 }
+    ) `
+    -altSections @(
+        @{
+            Condition = "[Generación automatizada de volcado de base de datos (Dump SQL)]"
+            NextSectionY = 560
+            Activations = @(
+                @{ Id = "Actor"; StartY = 160; Height = 350 },
+                @{ Id = "UI"; StartY = 170; Height = 325 },
+                @{ Id = "Ctrl"; StartY = 195; Height = 280 },
+                @{ Id = "DB"; StartY = 225; Height = 65 },
+                @{ Id = "Log"; StartY = 325; Height = 65 },
+                @{ Id = "Aud"; StartY = 410; Height = 55 }
+            )
+            Messages = @(
+                @{ From = "Actor"; To = "UI"; Y = 175; Text = "1. GenerarBackup(tipo: ""COMPLETO"")"; IsReturn = $false },
+                @{ From = "UI"; To = "Ctrl"; Y = 205; Text = "1.1. Generar(Request)"; IsReturn = $false },
+                @{ From = "Ctrl"; To = "DB"; Y = 235; Text = "1.2. VolcadoSQL(20Tablas, GenerarDump, SHA256)"; IsReturn = $false },
+                @{ From = "DB"; To = "Ctrl"; Y = 285; Text = "ArchivoGenerado(ruta, bytes, hash)"; IsReturn = $true },
+                @{ From = "Ctrl"; To = "Log"; Y = 335; Text = "1.3. Create([""nombre_archivo"", ""checksum_sha256"", ...])"; IsReturn = $false },
+                @{ From = "Log"; To = "Ctrl"; Y = 385; Text = "BackupLogCreado(id_backup)"; IsReturn = $true },
+                @{ From = "Ctrl"; To = "Aud"; Y = 415; Text = "1.4. RegistrarAuditoria(""GENERACION_BACKUP"")"; IsReturn = $false },
+                @{ From = "Ctrl"; To = "UI"; Y = 465; Text = "RespuestaBackupExitoso(data)"; IsReturn = $true },
+                @{ From = "UI"; To = "Actor"; Y = 495; Text = "MostrarMensajeConfirmacionYActualizarTabla()"; IsReturn = $true }
+            )
+        },
+        @{
+            Condition = "[Restauración de base de datos con verificación criptográfica]"
+            NextSectionY = 980
+            Activations = @(
+                @{ Id = "Actor"; StartY = 590; Height = 340 },
+                @{ Id = "UI"; StartY = 600; Height = 315 },
+                @{ Id = "Ctrl"; StartY = 625; Height = 270 },
+                @{ Id = "Log"; StartY = 655; Height = 65 },
+                @{ Id = "Aud"; StartY = 745; Height = 65 }
+            )
+            Messages = @(
+                @{ From = "Actor"; To = "UI"; Y = 605; Text = "2. SolicitarRestauracion(idBackup, confirmacion: ""RESTAURAR"")"; IsReturn = $false },
+                @{ From = "UI"; To = "Ctrl"; Y = 635; Text = "2.1. Restaurar(idBackup)"; IsReturn = $false },
+                @{ From = "Ctrl"; To = "Log"; Y = 665; Text = "2.2. VerificarChecksumSHA256(archivo) -> Update([""estado"" => ""RESTAURADO""])"; IsReturn = $false },
+                @{ From = "Log"; To = "Ctrl"; Y = 715; Text = "IntegridadValidaYActualizado()"; IsReturn = $true },
+                @{ From = "Ctrl"; To = "Aud"; Y = 750; Text = "2.3. RegistrarAuditoriaCritica(""RESTAURACION_BACKUP"")"; IsReturn = $false },
+                @{ From = "Ctrl"; To = "UI"; Y = 810; Text = "RespuestaRestauracionExitosa()"; IsReturn = $true },
+                @{ From = "UI"; To = "Actor"; Y = 850; Text = "NotificarRestauracionCompletada()"; IsReturn = $true }
+            )
+        }
+    )
+
+
 

@@ -1152,3 +1152,93 @@ Generate-Diagram `
         @{ From = "Ctrl"; To = "BitacoraAuditoria"; Type = "Horizontal"; Dashed = $true }
     )
 
+# ==============================================================================
+# CU22: Copias de seguridad y restauración (Backup / Restore)
+# ==============================================================================
+Generate-Diagram `
+    -cuCode "CU22" `
+    -title "Gestión de copias de seguridad y restauración de base de datos" `
+    -actorName "Administrador del Sistema" `
+    -uiClass @{
+        Name = "UI_BackupRestore"
+        X = 185; Y = 430; W = 225
+        Attributes = @()
+        Methods = @(
+            "+ consultarHistorialBackups(): void",
+            "+ solicitarGeneracionBackup(): void",
+            "+ descargarArchivoSQL(): void",
+            "+ solicitarRestauracionBD(): void",
+            "+ eliminarBackup(): void"
+        )
+    } `
+    -ctrlClass @{
+        Name = "CU22_BackupRestoreController"
+        X = 540; Y = 430; W = 250
+        Attributes = @(
+            "- formatearBytes(bytes): string"
+        )
+        Methods = @(
+            "+ index(Request): JsonResponse",
+            "+ estadoSistema(): JsonResponse",
+            "+ generar(Request): JsonResponse",
+            "+ descargar(id): BinaryFileResponse",
+            "+ restaurar(Request, id): JsonResponse",
+            "+ destroy(id): JsonResponse"
+        )
+    } `
+    -entities @(
+        @{
+            Name = "BackupLog"
+            X = 920; Y = 280; W = 240
+            Attributes = @(
+                "- id_backup: bigint",
+                "- nombre_archivo: string",
+                "- tipo_backup: string",
+                "- tamano_bytes: bigint",
+                "- estado: string",
+                "- checksum_sha256: string",
+                "- fecha_creacion: timestamp",
+                "- fecha_restauracion: timestamp"
+            )
+            Methods = @(
+                "+ create(data: array): Model",
+                "+ findOrFail(id: int): Model",
+                "+ update(data: array): bool"
+            )
+        },
+        @{
+            Name = "BitacoraAuditoria"
+            X = 1200; Y = 280; W = 240
+            Attributes = @(
+                "- id_bitacora: bigint",
+                "- modulo: string",
+                "- tabla_afectada: string",
+                "- operacion: string",
+                "- valores_nuevos: jsonb",
+                "- fecha_creacion: timestamp"
+            )
+            Methods = @(
+                "+ create(data: array): Model"
+            )
+        },
+        @{
+            Name = "Usuario"
+            X = 920; Y = 590; W = 240
+            Attributes = @(
+                "- id_usuario: bigint",
+                "- username: string",
+                "- email: string",
+                "- estado: string"
+            )
+            Methods = @(
+                "+ find(id: int): Model"
+            )
+        }
+    ) `
+    -connections @(
+        @{ From = "Ctrl"; To = "BackupLog"; Type = "Horizontal"; Dashed = $true },
+        @{ From = "Ctrl"; To = "BitacoraAuditoria"; Type = "RightToTop"; Dashed = $true },
+        @{ From = "Ctrl"; To = "Usuario"; Type = "Horizontal"; Dashed = $true }
+    )
+
+

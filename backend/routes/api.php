@@ -22,6 +22,7 @@ use App\Controllers\PKG07_Laboratorios\CU18_VisualizarEstudios\CU18_VisualizarEs
 use App\Controllers\PKG08_DashboardReportes\CU19_Recordatorios\CU19_RecordatorioController;
 use App\Controllers\PKG08_DashboardReportes\CU20_Dashboard\CU20_DashboardController;
 use App\Controllers\PKG08_DashboardReportes\CU21_Reportes\CU21_ReportesController;
+use App\Controllers\PKG01_Seguridad\CU22_BackupRestore\CU22_BackupRestoreController;
 
 /*
 |--------------------------------------------------------------------------
@@ -242,6 +243,19 @@ Route::prefix('reportes')->group(function () {
     Route::get('/cancelaciones-inasistencias', [CU21_ReportesController::class, 'cancelacionesInasistencias']);
     Route::post('/auditar-exportacion', [CU21_ReportesController::class, 'auditarExportacion']);
 });
+
+// ==========================================
+// CU22: Copias de Seguridad y Restauración (Backup / Restore)
+// ==========================================
+Route::prefix('backups')->group(function () {
+    Route::get('/', [CU22_BackupRestoreController::class, 'index']);
+    Route::get('/estado-sistema', [CU22_BackupRestoreController::class, 'estadoSistema']);
+    Route::post('/generar', [CU22_BackupRestoreController::class, 'generar']);
+    Route::get('/{id}/descargar', [CU22_BackupRestoreController::class, 'descargar']);
+    Route::post('/{id}/restaurar', [CU22_BackupRestoreController::class, 'restaurar']);
+    Route::delete('/{id}', [CU22_BackupRestoreController::class, 'destroy']);
+});
+
 
 
 

@@ -38,6 +38,7 @@ import CU18_VisualizarEstudiosView from '../PKG07_Laboratorios/CU18_VisualizarEs
 import CU19_RecordatoriosView from '../PKG08_DashboardReportes/CU19_Recordatorios/CU19_RecordatoriosView';
 import CU20_DashboardView from '../PKG08_DashboardReportes/CU20_Dashboard/CU20_DashboardView';
 import CU21_ReportesView from '../PKG08_DashboardReportes/CU21_Reportes/CU21_ReportesView';
+import CU22_BackupView from '../PKG01_Seguridad/CU22_BackupRestore/CU22_BackupView';
 import SeniorCUPlaceholder from '../common/SeniorCUPlaceholder';
 
 // Iconos por paquete
@@ -322,7 +323,7 @@ export const MainLayout = ({ currentUser, onLogout }) => {
                             </span>
                           </div>
 
-                          {['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21'].includes(cu.id) && (
+                          {['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21', 'CU22'].includes(cu.id) && (
                             <span style={{
                               padding: '0.12rem 0.4rem',
                               borderRadius: '4px',
@@ -584,6 +585,8 @@ export const MainLayout = ({ currentUser, onLogout }) => {
 
           {activeCUId === 'CU04' && <CU04_EspecialidadesView />}
 
+          {activeCUId === 'CU22' && <CU22_BackupView />}
+
           {activeCUId === 'CU03' && <CU03_GestionUsuariosView />}
 
           {activeCUId === 'CU02' && <CU02_BitacoraView />}
@@ -596,7 +599,7 @@ export const MainLayout = ({ currentUser, onLogout }) => {
             />
           )}
 
-          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21'].includes(activeCUId) && (
+          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21', 'CU22'].includes(activeCUId) && (
             <SeniorCUPlaceholder
               cu={activeCUInfo.cu}
               pkg={activeCUInfo.pkg}

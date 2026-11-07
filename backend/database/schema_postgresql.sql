@@ -354,6 +354,25 @@ CREATE TABLE bitacora_auditoria (
 CREATE INDEX idx_bitacora_registro ON bitacora_auditoria(tabla_afectada, id_registro_afectado);
 CREATE INDEX idx_bitacora_fecha ON bitacora_auditoria(fecha_creacion);
 
+CREATE TABLE backup_logs (
+    id_backup BIGSERIAL PRIMARY KEY,
+    nombre_archivo VARCHAR(150) NOT NULL UNIQUE,
+    tipo_backup VARCHAR(30) NOT NULL DEFAULT 'COMPLETO' CHECK (tipo_backup IN ('COMPLETO', 'SOLO_DATOS', 'SOLO_ESTRUCTURA')),
+    tamano_bytes BIGINT NOT NULL DEFAULT 0,
+    tamano_formateado VARCHAR(20) NOT NULL DEFAULT '0 KB',
+    estado VARCHAR(20) NOT NULL DEFAULT 'COMPLETADO' CHECK (estado IN ('COMPLETADO', 'EN_PROCESO', 'FALLIDO', 'RESTAURADO')),
+    checksum_sha256 VARCHAR(64),
+    ruta_almacenamiento VARCHAR(255),
+    detalles JSONB,
+    creado_por BIGINT NOT NULL,
+    fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_restauracion TIMESTAMP WITH TIME ZONE,
+    restaurado_por BIGINT,
+    CONSTRAINT fk_backups_creador FOREIGN KEY (creado_por) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    CONSTRAINT fk_backups_restaurador FOREIGN KEY (restaurado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
+);
+CREATE INDEX idx_backups_fecha ON backup_logs(fecha_creacion);
+
 -- ==============================================================================
 -- 7. DATOS SEMILLA (ROLES, USUARIOS, ESPECIALIDADES Y PERMISOS)
 -- ==============================================================================
@@ -536,3 +555,4 @@ SELECT setval(pg_get_serial_sequence('turnos_medicos', 'id_turno'), COALESCE((SE
 SELECT setval(pg_get_serial_sequence('citas', 'id_cita'), COALESCE((SELECT MAX(id_cita) FROM citas), 1));
 SELECT setval(pg_get_serial_sequence('atenciones_medicas', 'id_atencion'), COALESCE((SELECT MAX(id_atencion) FROM atenciones_medicas), 1));
 SELECT setval(pg_get_serial_sequence('laboratorios_estudios', 'id_estudio'), COALESCE((SELECT MAX(id_estudio) FROM laboratorios_estudios), 1));
+SELECT setval(pg_get_serial_sequence('backup_logs', 'id_backup'), COALESCE((SELECT MAX(id_backup) FROM backup_logs), 1));
