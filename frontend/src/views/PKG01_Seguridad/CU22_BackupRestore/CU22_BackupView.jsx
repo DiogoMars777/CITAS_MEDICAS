@@ -71,6 +71,9 @@ export const CU22_BackupView = () => {
     eliminarBackup,
   } = useCU22BackupRestoreController();
 
+  // Tipo de respaldo manual seleccionado (COMPLETO, SOLO_DATOS, SOLO_ESTRUCTURA)
+  const [tipoManualSeleccionado, setTipoManualSeleccionado] = useState(TIPOS_BACKUP.COMPLETO);
+
   // Estado local para edición del formulario de programación
   const [formConfig, setFormConfig] = useState({
     habilitado: true,
@@ -205,29 +208,6 @@ export const CU22_BackupView = () => {
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             <span>Refrescar</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => generarBackup(TIPOS_BACKUP.COMPLETO)}
-            disabled={generando || loading}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              padding: '0.55rem 0.95rem',
-              borderRadius: '8px',
-              border: 'none',
-              background: generando ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-              color: '#ffffff',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              cursor: generando ? 'not-allowed' : 'pointer',
-              boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)',
-            }}
-          >
-            <Database size={15} />
-            <span>{generando ? 'Generando Volcado...' : 'Hacer Backup Manual Ahora'}</span>
           </button>
         </div>
       </div>
@@ -520,92 +500,181 @@ export const CU22_BackupView = () => {
       ------------------------------------------------------------------------- */}
       {pestañaActiva === 'HISTORIAL' && (
         <>
-          {/* PANEL DE MODALIDADES DE RESPALDO MANUAL */}
+          {/* PANEL DE RESPALDO MANUAL CONTROLADO (SELECCIONAR Y CONFIRMAR) */}
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
             border: '1px solid #e2e8f0',
-            padding: '1.25rem',
+            padding: '1.25rem 1.4rem',
             marginBottom: '1.25rem',
             boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div>
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '3px' }}>
+                <Database size={18} color="#0284c7" />
                 <h2 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                  Generar Copia de Seguridad Manual Inmediata
+                  Generar Copia de Seguridad Manual
                 </h2>
-                <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: '#64748b' }}>
-                  Seleccione el alcance deseado para emitir un volcado SQL auditable con verificación de integridad.
-                </p>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>
+                Paso 1: Seleccione uno de los 3 alcances. Paso 2: Presione el botón <strong>"Hacer Backup Manual Ahora"</strong> para confirmar y ejecutar el volcado.
+              </p>
+            </div>
+
+            {/* SELECTOR DE 3 OPCIONES: SOLO SELECCIONAN, NO DISPARAN INMEDIATAMENTE */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '0.85rem',
+              marginBottom: '1.15rem',
+            }}>
+              {[
+                {
+                  id: TIPOS_BACKUP.COMPLETO,
+                  titulo: 'Completo (DDL + Datos)',
+                  desc: 'Esquema completo y todos los registros de pacientes, citas y consultas.',
+                  icono: Database,
+                  badge: 'Recomendado',
+                },
+                {
+                  id: TIPOS_BACKUP.SOLO_DATOS,
+                  titulo: 'Solo Datos (INSERTS)',
+                  desc: 'Sentencias INSERT de tablas clínicas sin alterar definiciones de esquema.',
+                  icono: Layers,
+                  badge: 'Datos',
+                },
+                {
+                  id: TIPOS_BACKUP.SOLO_ESTRUCTURA,
+                  titulo: 'Solo Estructura (DDL)',
+                  desc: 'Definición de tablas, llaves foráneas, secuencias y tipos de datos.',
+                  icono: FileCode,
+                  badge: 'Esquema',
+                },
+              ].map((opcion) => {
+                const Icono = opcion.icono;
+                const estaSeleccionado = tipoManualSeleccionado === opcion.id;
+
+                return (
+                  <div
+                    key={opcion.id}
+                    onClick={() => setTipoManualSeleccionado(opcion.id)}
+                    style={{
+                      padding: '0.95rem 1rem',
+                      borderRadius: '10px',
+                      border: estaSeleccionado ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                      background: estaSeleccionado ? '#f0f9ff' : '#ffffff',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.4rem',
+                      position: 'relative',
+                      boxShadow: estaSeleccionado ? '0 3px 8px rgba(2, 132, 199, 0.12)' : 'none',
+                      transition: 'all 0.15s ease',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          background: estaSeleccionado ? '#0284c7' : '#f1f5f9',
+                          color: estaSeleccionado ? '#ffffff' : '#64748b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Icono size={16} />
+                        </div>
+                        <span style={{ fontSize: '0.84rem', fontWeight: 800, color: estaSeleccionado ? '#0369a1' : '#0f172a' }}>
+                          {opcion.titulo}
+                        </span>
+                      </div>
+
+                      {/* Círculo indicador tipo radio */}
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        border: estaSeleccionado ? '5px solid #0284c7' : '2px solid #cbd5e1',
+                        background: '#ffffff',
+                        transition: 'all 0.15s ease',
+                      }} />
+                    </div>
+
+                    <p style={{ margin: '2px 0 0', fontSize: '0.74rem', color: '#64748b', lineHeight: 1.4 }}>
+                      {opcion.desc}
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '4px' }}>
+                      <span style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        background: estaSeleccionado ? '#bae6fd' : '#f1f5f9',
+                        color: estaSeleccionado ? '#0369a1' : '#64748b',
+                      }}>
+                        {opcion.badge}
+                      </span>
+                      {estaSeleccionado && (
+                        <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 700 }}>
+                          ✓ Opción Seleccionada
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* BOTÓN ÚNICO DE CONFIRMACIÓN Y DISPARO */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: '0.9rem',
+              borderTop: '1px solid #e2e8f0',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+            }}>
+              <div style={{ fontSize: '0.78rem', color: '#475569' }}>
+                Alcance seleccionado para ejecutar:{' '}
+                <strong style={{ color: '#0284c7' }}>
+                  {tipoManualSeleccionado === TIPOS_BACKUP.COMPLETO && 'COMPLETO (DDL + Todos los Datos)'}
+                  {tipoManualSeleccionado === TIPOS_BACKUP.SOLO_DATOS && 'SOLO DATOS (Sentencias INSERT)'}
+                  {tipoManualSeleccionado === TIPOS_BACKUP.SOLO_ESTRUCTURA && 'SOLO ESTRUCTURA (Definición DDL)'}
+                </strong>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => generarBackup(TIPOS_BACKUP.COMPLETO)}
-                  disabled={generando || loading}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    padding: '0.48rem 0.85rem',
-                    borderRadius: '8px',
-                    border: '1px solid #0284c7',
-                    background: '#0284c7',
-                    color: '#ffffff',
-                    fontSize: '0.76rem',
-                    fontWeight: 700,
-                    cursor: generando ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  <Database size={14} />
-                  <span>Completo (DDL + Datos)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => generarBackup(TIPOS_BACKUP.SOLO_DATOS)}
-                  disabled={generando || loading}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    padding: '0.48rem 0.85rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#f8fafc',
-                    color: '#334155',
-                    fontSize: '0.76rem',
-                    fontWeight: 700,
-                    cursor: generando ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  <Layers size={14} />
-                  <span>Solo Datos (INSERTS)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => generarBackup(TIPOS_BACKUP.SOLO_ESTRUCTURA)}
-                  disabled={generando || loading}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    padding: '0.48rem 0.85rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#f8fafc',
-                    color: '#334155',
-                    fontSize: '0.76rem',
-                    fontWeight: 700,
-                    cursor: generando ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  <FileCode size={14} />
-                  <span>Solo Estructura (DDL)</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => generarBackup(tipoManualSeleccionado)}
+                disabled={generando || loading}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.58rem 1.35rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: generando ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  cursor: generando ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 3px 8px rgba(2, 132, 199, 0.28)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Database size={16} className={generando ? 'animate-spin' : ''} />
+                <span>
+                  {generando
+                    ? 'Generando Volcado SQL...'
+                    : `Hacer Backup (${tipoManualSeleccionado === TIPOS_BACKUP.COMPLETO ? 'Completo' : tipoManualSeleccionado === TIPOS_BACKUP.SOLO_DATOS ? 'Solo Datos' : 'Solo Estructura'})`}
+                </span>
+              </button>
             </div>
           </div>
 
