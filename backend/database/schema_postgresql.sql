@@ -259,10 +259,12 @@ CREATE TABLE atenciones_medicas (
     id_medico BIGINT NOT NULL,
     motivo_consulta VARCHAR(255) NOT NULL,
     sintomas TEXT,
+    signos_vitales TEXT, -- JSON estructurado: {presion_arterial, frecuencia_cardiaca, temperatura, saturacion_oxigeno, peso, talla, imc}
     diagnostico_cie10 VARCHAR(20),
     diagnostico_descripcion TEXT NOT NULL,
     tratamiento TEXT,
     receta_medica TEXT,
+    derivacion_especialidad VARCHAR(100),
     fecha_atencion TIMESTAMP WITH TIME ZONE NOT NULL,
     fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_atenciones_cita FOREIGN KEY (id_cita) REFERENCES citas(id_cita) ON DELETE RESTRICT,
@@ -465,6 +467,60 @@ SELECT 4, id_permiso FROM permisos
 WHERE nombre_permiso IN ('disponibilidad.ver', 'citas.ver', 'citas.reservar', 'citas.reprogramar', 'citas.cancelar', 'laboratorios.ver', 'laboratorios.descargar')
 ON CONFLICT (id_rol, id_permiso) DO NOTHING;
 
+-- Perfiles Pacientes Adicionales y Contactos de Emergencia
+INSERT INTO pacientes (id_paciente, id_usuario, ci, nombres, apellidos, fecha_nacimiento, sexo, telefono, email, direccion, primera_visita, estado) VALUES
+(2, NULL, '71234567', 'María René', 'Flores Morales', '1985-08-22', 'FEMENINO', '71023456', 'maria.flores@gmail.com', 'Calle Sucre #120', FALSE, 'ACTIVO'),
+(3, NULL, '65432109', 'Jorge Luis', 'Camacho Vaca', '1978-11-04', 'MASCULINO', '72034567', 'jorge.camacho@hotmail.com', 'Barrio Equipetrol #88', FALSE, 'ACTIVO'),
+(4, NULL, '54321098', 'Lucía Victoria', 'Ríos Méndez', '1995-02-18', 'FEMENINO', '73045678', 'lucia.rios@gmail.com', 'Av. San Martín #740', FALSE, 'ACTIVO'),
+(5, NULL, '43210987', 'Andrés Fernando', 'Salvatierra Ortiz', '1962-09-30', 'MASCULINO', '74056789', 'andres.salvatierra@outlook.com', 'Calle Beni #312', FALSE, 'ACTIVO'),
+(6, NULL, '32109876', 'Carla Patricia', 'Torres Benítez', '2001-07-12', 'FEMENINO', '75067890', 'carla.torres@gmail.com', 'Av. Cristo Redentor #1500', TRUE, 'ACTIVO')
+ON CONFLICT (id_paciente) DO NOTHING;
+
+-- Historias Clínicas (con diversas alergias y antecedentes clínicos)
+INSERT INTO historias_clinicas (id_historia_clinica, id_paciente, numero_expediente, tipo_sangre, alergias_medicamentos, enfermedades_hereditarias, antecedentes_patologicos, antecedentes_quirurgicos) VALUES
+(2, 2, 'HC-2026-0002', 'A+', 'Sulfamidas (Trimetoprima-Sulfametoxazol)', 'Diabetes Mellitus tipo 2', 'Rinitis alérgica estacional', 'Sin cirugías previas'),
+(3, 3, 'HC-2026-0003', 'B+', 'AINEs (Ibuprofeno, Diclofenaco, Aspirina)', 'Cardiopatía isquémica', 'Úlcera péptica', 'Colecistectomía laparoscópica (2021)'),
+(4, 4, 'HC-2026-0004', 'O-', 'Ninguna conocida', 'Sin antecedentes de relevancia', 'Asma bronquial en infancia (remitido)', 'Sin cirugías previas'),
+(5, 5, 'HC-2026-0005', 'AB+', 'Eritromicina, Azitromicina', 'Hipertensión y ACV', 'Dislipidemia mixta', 'Reducción de fractura de fémur (2015)'),
+(6, 6, 'HC-2026-0006', 'O+', 'Ninguna conocida', 'Cáncer de mama (abuela)', 'Hipotiroidismo primario en tratamiento', 'Cesárea (2020)')
+ON CONFLICT (id_paciente) DO NOTHING;
+
+-- Contactos de Emergencia
+INSERT INTO contactos_emergencia (id_contacto, id_paciente, nombre_completo, parentesco, telefono) VALUES
+(1, 1, 'Elena Gómez', 'Madre', '70099887'),
+(2, 2, 'Roberto Morales', 'Padre', '70122334'),
+(3, 3, 'Daniela Castro', 'Esposa', '70233445'),
+(4, 4, 'Martín Roca', 'Hermano', '70344556')
+ON CONFLICT (id_contacto) DO NOTHING;
+
+-- Turnos Médicos Semanales de Ejemplo
+INSERT INTO turnos_medicos (id_turno, id_medico, dia_semana, hora_inicio, hora_fin, duracion_slot_minutos, capacidad_maxima, estado) VALUES
+(1, 1, 1, '08:00', '12:00', 30, 8, 'ACTIVO'),
+(2, 1, 2, '08:00', '12:00', 30, 8, 'ACTIVO'),
+(3, 1, 3, '08:00', '12:00', 30, 8, 'ACTIVO'),
+(4, 1, 4, '08:00', '12:00', 30, 8, 'ACTIVO'),
+(5, 1, 5, '08:00', '12:00', 30, 8, 'ACTIVO')
+ON CONFLICT (id_turno) DO NOTHING;
+
+-- Citas Médicas Iniciales
+INSERT INTO citas (id_cita, codigo_cita, id_paciente, id_medico, id_especialidad, id_turno, fecha_cita, hora_inicio, hora_fin, estado_cita, motivo_consulta) VALUES
+(1, 'CITA-2026-0001', 1, 1, 1, 1, CURRENT_DATE, '08:00', '08:30', 'COMPLETADA', 'Control de presión arterial y cefalea matutina'),
+(2, 'CITA-2026-0002', 2, 1, 1, 1, CURRENT_DATE, '08:30', '09:00', 'CONFIRMADA', 'Evaluación de dolor lumbar y fatiga'),
+(3, 'CITA-2026-0003', 3, 1, 1, 1, CURRENT_DATE, '09:00', '09:30', 'CONFIRMADA', 'Chequeo rutinario anual y dispepsia')
+ON CONFLICT (id_cita) DO NOTHING;
+
+-- Atención Médica de Ejemplo con Signos Vitales
+INSERT INTO atenciones_medicas (id_atencion, id_cita, id_historia_clinica, id_medico, motivo_consulta, sintomas, signos_vitales, diagnostico_cie10, diagnostico_descripcion, tratamiento, receta_medica, derivacion_especialidad, fecha_atencion) VALUES
+(1, 1, 1, 1, 'Control de presión arterial y cefalea matutina', 'Paciente refiere cefalea holocraneal opresiva intermitente de 3 días de evolución, sin fotofobia.', '{"presion_arterial": "145/95 mmHg", "frecuencia_cardiaca": "78 lpm", "temperatura": "36.6 °C", "saturacion_oxigeno": "98 %", "peso": "82 kg", "talla": "175 cm", "imc": "26.8"}', 'I10', 'Hipertensión esencial (primaria) descompensada leve', 'Ajuste de dosis antihipertensiva. Dieta hiposódica estricta y caminatas de 30 min diarias.', '1. Losartán Potásico 50mg - 1 comprimido cada 12 horas por 30 días.\n2. Hidroclorotiazida 12.5mg - 1 comprimido en la mañana por 30 días.', 'Cardiología (control semestral)', CURRENT_TIMESTAMP - INTERVAL '1 hour')
+ON CONFLICT (id_cita) DO NOTHING;
+
+-- Laboratorios y Estudios Clínicos Demo
+INSERT INTO laboratorios_estudios (id_estudio, codigo_estudio, id_paciente, id_medico_solicitante, id_cita, nombre_estudio, tipo_estudio, descripcion, estado, resultado_diagnostico, archivo_resultado_url, publicado_en) VALUES
+(1, 'LAB-20261020-0012', 1, 1, 1, 'Perfil Lipídico y Función Renal', 'Laboratorio Clínico', 'Colesterol total, Triglicéridos, HDL, LDL, Creatinina y Urea', 'PUBLICADO', 'Colesterol Total: 220 mg/dL (Elevado), Triglicéridos: 185 mg/dL, HDL: 42 mg/dL, LDL: 141 mg/dL. Creatinina: 0.9 mg/dL (Normal).', '/laboratorios/resultados/exp_0001_lipidos.pdf', CURRENT_TIMESTAMP - INTERVAL '2 days'),
+(2, 'LAB-20261022-0034', 2, 1, 2, 'Hemograma Completo y Glucemia en Ayunas', 'Laboratorio Clínico', 'Recuento leucocitario, Hemoglobina, Hematocrito, Plaquetas, Glucemia basal', 'PUBLICADO', 'Glucosa basal: 112 mg/dL (Glucemia alterada en ayunas), Leucocitos: 7.200 /mm3, Hemoglobina: 14.1 g/dL.', '/laboratorios/resultados/exp_0002_hemograma.pdf', CURRENT_TIMESTAMP - INTERVAL '1 day'),
+(3, 'LAB-20261025-0089', 3, 1, 3, 'Electrocardiograma 12 Derivaciones', 'Cardiología / Gabinete', 'Trazado basal con informe cardiológico', 'PUBLICADO', 'Ritmo sinusal regular, FC 74 lpm, PR 0.16s, QRS angosto. Sin alteraciones agudas de la repolarización ventricular.', '/laboratorios/resultados/exp_0003_ecg.pdf', CURRENT_TIMESTAMP - INTERVAL '3 hours')
+ON CONFLICT (id_estudio) DO NOTHING;
+
 -- ==============================================================================
 -- 8. SINCRONIZACIÓN DE SECUENCIAS AUTO-INCREMENTABLES
 -- ==============================================================================
@@ -475,3 +531,8 @@ SELECT setval(pg_get_serial_sequence('especialidades', 'id_especialidad'), COALE
 SELECT setval(pg_get_serial_sequence('medicos', 'id_medico'), COALESCE((SELECT MAX(id_medico) FROM medicos), 1));
 SELECT setval(pg_get_serial_sequence('pacientes', 'id_paciente'), COALESCE((SELECT MAX(id_paciente) FROM pacientes), 1));
 SELECT setval(pg_get_serial_sequence('historias_clinicas', 'id_historia_clinica'), COALESCE((SELECT MAX(id_historia_clinica) FROM historias_clinicas), 1));
+SELECT setval(pg_get_serial_sequence('contactos_emergencia', 'id_contacto'), COALESCE((SELECT MAX(id_contacto) FROM contactos_emergencia), 1));
+SELECT setval(pg_get_serial_sequence('turnos_medicos', 'id_turno'), COALESCE((SELECT MAX(id_turno) FROM turnos_medicos), 1));
+SELECT setval(pg_get_serial_sequence('citas', 'id_cita'), COALESCE((SELECT MAX(id_cita) FROM citas), 1));
+SELECT setval(pg_get_serial_sequence('atenciones_medicas', 'id_atencion'), COALESCE((SELECT MAX(id_atencion) FROM atenciones_medicas), 1));
+SELECT setval(pg_get_serial_sequence('laboratorios_estudios', 'id_estudio'), COALESCE((SELECT MAX(id_estudio) FROM laboratorios_estudios), 1));
