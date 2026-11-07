@@ -119,3 +119,4 @@ class BackupConfiguracion extends Model
         return $ahora->copy()->addDay()->setTime($hora, $minuto, 0);
     }
 }
+

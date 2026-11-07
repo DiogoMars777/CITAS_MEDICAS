@@ -103,6 +103,12 @@ export const CU22_BackupView = () => {
 
   const [confirmacionTexto, setConfirmacionTexto] = useState('');
 
+  const toggleHabilitadoDirecto = (nuevoEstado) => {
+    const nuevaConfig = { ...formConfig, habilitado: nuevoEstado };
+    setFormConfig(nuevaConfig);
+    guardarConfiguracion(nuevaConfig);
+  };
+
   const handleSubmitConfig = (e) => {
     e.preventDefault();
     guardarConfiguracion(formConfig);
@@ -938,18 +944,44 @@ export const CU22_BackupView = () => {
                 </div>
               </div>
 
-              {/* Botón Toggle */}
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', userSelect: 'none' }}>
+              {/* Botón Switch Toggle Elegante e Inmediato */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span style={{ fontSize: '0.82rem', fontWeight: 800, color: formConfig.habilitado ? '#166534' : '#64748b' }}>
                   {formConfig.habilitado ? 'PROGRAMACIÓN HABILITADA' : 'PROGRAMACIÓN SUSPENDIDA'}
                 </span>
-                <input
-                  type="checkbox"
-                  checked={formConfig.habilitado}
-                  onChange={(e) => setFormConfig({ ...formConfig, habilitado: e.target.checked })}
-                  style={{ width: '20px', height: '20px', accentColor: '#059669', cursor: 'pointer' }}
-                />
-              </label>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={formConfig.habilitado}
+                  disabled={guardandoConfig}
+                  onClick={() => toggleHabilitadoDirecto(!formConfig.habilitado)}
+                  title={formConfig.habilitado ? 'Clic para suspender la programación automática' : 'Clic para activar la programación automática'}
+                  style={{
+                    position: 'relative',
+                    width: '50px',
+                    height: '28px',
+                    borderRadius: '9999px',
+                    background: formConfig.habilitado ? '#059669' : '#cbd5e1',
+                    border: 'none',
+                    cursor: guardandoConfig ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.25s ease',
+                    padding: '2px 3px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  <div style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+                    transform: formConfig.habilitado ? 'translateX(22px)' : 'translateX(0)',
+                    transition: 'transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }} />
+                </button>
+              </div>
             </div>
 
             {/* CAMPOS DE CONFIGURACIÓN */}

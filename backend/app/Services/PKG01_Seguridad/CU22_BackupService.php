@@ -128,7 +128,7 @@ class CU22_BackupService
             'modulo'               => 'SEGURIDAD',
             'tabla_afectada'       => 'backup_logs',
             'id_registro_afectado' => $backup->id_backup,
-            'operacion'            => $tipoDisparo === 'PROGRAMADO' ? 'BACKUP_PROGRAMADO_AUTOMATICO' : 'GENERACION_BACKUP',
+            'operacion'            => $tipoDisparo === 'PROGRAMADO' ? 'BACKUP_PROGRAMADO' : 'GENERACION_BACKUP',
             'valores_nuevos'       => [
                 'archivo'      => $nombreArchivo,
                 'tipo'         => $tipo,
@@ -275,3 +275,4 @@ class CU22_BackupService
         }
     }
 }
+

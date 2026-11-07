@@ -152,12 +152,20 @@ class CU22_BackupRestoreController extends Controller
                 'frecuencia'         => 'required|in:DIARIO,SEMANAL,MENSUAL',
                 'dia_semana'         => 'nullable|integer|between:1,7',
                 'dia_mes'            => 'nullable|integer|between:1,31',
-                'hora_ejecucion'     => 'required|string|regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/',
+                'hora_ejecucion'     => 'required|string',
                 'tipo_backup'        => 'required|in:COMPLETO,SOLO_DATOS,SOLO_ESTRUCTURA',
                 'retencion_dias'     => 'required|integer|min:0|max:365',
                 'limite_archivos'    => 'required|integer|min:1|max:100',
                 'email_notificacion' => 'nullable|email|max:150',
             ]);
+
+            $hora = trim($validated['hora_ejecucion']);
+            if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $hora)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'El formato de hora debe ser HH:MM (ej. 02:00).',
+                ], 422);
+            }
 
             $config = BackupConfiguracion::first();
             if (!$config) {
@@ -181,7 +189,7 @@ class CU22_BackupRestoreController extends Controller
                 'modulo'               => 'SEGURIDAD',
                 'tabla_afectada'       => 'backup_configuraciones',
                 'id_registro_afectado' => $config->id_configuracion,
-                'operacion'            => 'ACTUALIZACION_CONFIGURACION_BACKUP',
+                'operacion'            => 'CONFIG_BACKUP_AUTO',
                 'valores_nuevos'       => [
                     'habilitado'     => $config->habilitado,
                     'frecuencia'     => $config->frecuencia,
