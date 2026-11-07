@@ -21,6 +21,7 @@ use App\Controllers\PKG07_Laboratorios\CU17_CargarEstudios\CU17_CargaEstudioCont
 use App\Controllers\PKG07_Laboratorios\CU18_VisualizarEstudios\CU18_VisualizarEstudiosController;
 use App\Controllers\PKG08_DashboardReportes\CU19_Recordatorios\CU19_RecordatorioController;
 use App\Controllers\PKG08_DashboardReportes\CU20_Dashboard\CU20_DashboardController;
+use App\Controllers\PKG08_DashboardReportes\CU21_Reportes\CU21_ReportesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -229,6 +230,19 @@ Route::prefix('recordatorios')->group(function () {
 Route::prefix('dashboard')->group(function () {
     Route::get('/metricas', [CU20_DashboardController::class, 'metricas']);
 });
+
+// ==========================================
+// CU21: Generar Reportes Clínicos y Estadísticos
+// ==========================================
+Route::prefix('reportes')->group(function () {
+    Route::get('/meta', [CU21_ReportesController::class, 'meta']);
+    Route::get('/productividad-medica', [CU21_ReportesController::class, 'productividadMedica']);
+    Route::get('/morbilidad-cie10', [CU21_ReportesController::class, 'morbilidadCie10']);
+    Route::get('/laboratorios-estudios', [CU21_ReportesController::class, 'laboratoriosEstudios']);
+    Route::get('/cancelaciones-inasistencias', [CU21_ReportesController::class, 'cancelacionesInasistencias']);
+    Route::post('/auditar-exportacion', [CU21_ReportesController::class, 'auditarExportacion']);
+});
+
 
 
 

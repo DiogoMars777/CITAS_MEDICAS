@@ -1,8 +1,7 @@
 Add-Type -AssemblyName System.Drawing
 
-$artifactDir = "C:\Users\Daniel\.gemini\antigravity\brain\ff5848d4-3680-49b5-b7df-90a270b6f24e"
-$root1 = "c:\Users\Daniel\Downloads\CITAS_MEDICAS-main"
-$root2 = "c:\Users\Daniel\Downloads\CITAS_MEDICAS-main (1)\CITAS_MEDICAS-main"
+$targetDir = $PSScriptRoot
+if (-not $targetDir) { $targetDir = (Get-Location).Path }
 
 function Draw-ActorIcon {
     param($g, $x, $y)
@@ -250,15 +249,8 @@ function Generate-SequenceDiagram {
 
     # 5. Save images
     $fileName = "Diagrama_Secuencia_Analisis_$cuCode.png"
-    $path1 = Join-Path $root1 $fileName
-    $path2 = Join-Path $root2 $fileName
-    $path3 = Join-Path $artifactDir $fileName
-
-    $bmp.Save($path1, [System.Drawing.Imaging.ImageFormat]::Png)
-    if (Test-Path $root2) {
-        $bmp.Save($path2, [System.Drawing.Imaging.ImageFormat]::Png)
-    }
-    $bmp.Save($path3, [System.Drawing.Imaging.ImageFormat]::Png)
+    $savePath = Join-Path $targetDir $fileName
+    $bmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
 
     $g.Dispose()
     $bmp.Dispose()
@@ -731,4 +723,61 @@ Generate-SequenceDiagram `
             )
         }
     )
+
+# ==============================================================================
+# CU21: Generar reportes clínicos y estadísticos
+# ==============================================================================
+Generate-SequenceDiagram `
+    -cuCode "CU21" `
+    -title "Generación y exportación de reportes clínicos y estadísticos" `
+    -lifelines @(
+        @{ Id = "Actor"; Name = "Director Médico / Admin"; Type = "Actor"; X = 85 },
+        @{ Id = "UI"; Name = "UI_ReportesClinicos"; Type = "Boundary"; X = 320 },
+        @{ Id = "Ctrl"; Name = "ReportesController"; Type = "Control"; X = 650 },
+        @{ Id = "Cita"; Name = "Cita"; Type = "Entity"; X = 980 },
+        @{ Id = "Atn"; Name = "AtencionMedica"; Type = "Entity"; X = 1240 },
+        @{ Id = "Aud"; Name = "BitacoraAuditoria"; Type = "Entity"; X = 1500 }
+    ) `
+    -altSections @(
+        @{
+            Condition = "[Generar reporte de productividad médica y morbilidad CIE-10]"
+            NextSectionY = 560
+            Activations = @(
+                @{ Id = "Actor"; StartY = 160; Height = 350 },
+                @{ Id = "UI"; StartY = 170; Height = 325 },
+                @{ Id = "Ctrl"; StartY = 195; Height = 280 },
+                @{ Id = "Cita"; StartY = 225; Height = 65 },
+                @{ Id = "Atn"; StartY = 325; Height = 65 }
+            )
+            Messages = @(
+                @{ From = "Actor"; To = "UI"; Y = 175; Text = "1. SolicitarReporte(tipo, rangoFechas, idEspecialidad)"; IsReturn = $false },
+                @{ From = "UI"; To = "Ctrl"; Y = 205; Text = "1.1. ProductividadMedica(Request)"; IsReturn = $false },
+                @{ From = "Ctrl"; To = "Cita"; Y = 235; Text = "1.2. Join(""medicos"")->WhereBetween(""fecha_cita"")->GroupBy(""id_medico"")"; IsReturn = $false },
+                @{ From = "Cita"; To = "Ctrl"; Y = 285; Text = "RespuestaAgregadaProductividad()"; IsReturn = $true },
+                @{ From = "Ctrl"; To = "Atn"; Y = 335; Text = "1.3. WhereBetween(""fecha_atencion"")->GroupBy(""diagnostico_cie10"")"; IsReturn = $false },
+                @{ From = "Atn"; To = "Ctrl"; Y = 385; Text = "RespuestaMorbilidadCIE10()"; IsReturn = $true },
+                @{ From = "Ctrl"; To = "UI"; Y = 445; Text = "RespuestaReporteClinico(indicadores, filas)"; IsReturn = $true },
+                @{ From = "UI"; To = "Actor"; Y = 480; Text = "RenderizarTablasYMetricasKPI()"; IsReturn = $true }
+            )
+        },
+        @{
+            Condition = "[Exportar informe formal (Excel / CSV o PDF con auditoría)]"
+            NextSectionY = 980
+            Activations = @(
+                @{ Id = "Actor"; StartY = 590; Height = 340 },
+                @{ Id = "UI"; StartY = 600; Height = 315 },
+                @{ Id = "Ctrl"; StartY = 625; Height = 270 },
+                @{ Id = "Aud"; StartY = 655; Height = 65 }
+            )
+            Messages = @(
+                @{ From = "Actor"; To = "UI"; Y = 605; Text = "2. ExportarReporte(formato: EXCEL_CSV | PDF)"; IsReturn = $false },
+                @{ From = "UI"; To = "Ctrl"; Y = 635; Text = "2.1. AuditarExportacion(tipo, formato, filtros)"; IsReturn = $false },
+                @{ From = "Ctrl"; To = "Aud"; Y = 665; Text = "2.2. Create([""modulo"" => ""REPORTES"", ""operacion"" => ""EXPORTACION""])"; IsReturn = $false },
+                @{ From = "Aud"; To = "Ctrl"; Y = 715; Text = "RespuestaAuditoriaGuardada()"; IsReturn = $true },
+                @{ From = "Ctrl"; To = "UI"; Y = 800; Text = "ConfirmacionOperacion()"; IsReturn = $true },
+                @{ From = "UI"; To = "Actor"; Y = 840; Text = "DescargarArchivoCSV_O_ImprimirPDF()"; IsReturn = $true }
+            )
+        }
+    )
+
 

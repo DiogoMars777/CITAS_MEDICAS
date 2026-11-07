@@ -1,8 +1,7 @@
 Add-Type -AssemblyName System.Drawing
 
-$artifactDir = "C:\Users\Daniel\.gemini\antigravity\brain\ff5848d4-3680-49b5-b7df-90a270b6f24e"
-$root1 = "c:\Users\Daniel\Downloads\CITAS_MEDICAS-main"
-$root2 = "c:\Users\Daniel\Downloads\CITAS_MEDICAS-main (1)\CITAS_MEDICAS-main"
+$targetDir = $PSScriptRoot
+if (-not $targetDir) { $targetDir = (Get-Location).Path }
 
 function Generate-Diagram {
     param(
@@ -217,17 +216,10 @@ function Generate-Diagram {
         }
     }
 
-    # 9. Save file in 3 destinations
+    # 9. Save file
     $fileName = "Diagrama_Analisis_Clases_$cuCode.png"
-    $path1 = Join-Path $root1 $fileName
-    $path2 = Join-Path $root2 $fileName
-    $path3 = Join-Path $artifactDir $fileName
-
-    $bmp.Save($path1, [System.Drawing.Imaging.ImageFormat]::Png)
-    if (Test-Path $root2) {
-        $bmp.Save($path2, [System.Drawing.Imaging.ImageFormat]::Png)
-    }
-    $bmp.Save($path3, [System.Drawing.Imaging.ImageFormat]::Png)
+    $savePath = Join-Path $targetDir $fileName
+    $bmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
 
     $g.Dispose()
     $bmp.Dispose()
@@ -1053,3 +1045,110 @@ Generate-Diagram `
         @{ From = "Ctrl"; To = "Cita"; Type = "Horizontal"; Dashed = $true },
         @{ From = "Ctrl"; To = "Medico"; Type = "Horizontal"; Dashed = $true }
     )
+
+# ==============================================================================
+# CU21: Generar reportes clínicos y estadísticos
+# ==============================================================================
+Generate-Diagram `
+    -cuCode "CU21" `
+    -title "Generación y exportación de reportes clínicos y estadísticos" `
+    -actorName "Director Médico / Admin" `
+    -uiClass @{
+        Name = "UI_ReportesClinicos"
+        X = 185; Y = 430; W = 225
+        Attributes = @()
+        Methods = @(
+            "+ seleccionarTipoReporte(): void",
+            "+ filtrarPorRangoFechas(): void",
+            "+ filtrarPorEspecialidadYMedico(): void",
+            "+ previsualizarMetricas(): void",
+            "+ exportarCSVExcel(): void",
+            "+ imprimirInformePDF(): void"
+        )
+    } `
+    -ctrlClass @{
+        Name = "CU21_ReportesController"
+        X = 540; Y = 430; W = 250
+        Attributes = @(
+            "- parseRangoFechas(req): array"
+        )
+        Methods = @(
+            "+ meta(): JsonResponse",
+            "+ productividadMedica(Request): JsonResponse",
+            "+ morbilidadCie10(Request): JsonResponse",
+            "+ laboratoriosEstudios(Request): JsonResponse",
+            "+ cancelacionesInasistencias(Request): JsonResponse",
+            "+ auditarExportacion(Request): JsonResponse"
+        )
+    } `
+    -entities @(
+        @{
+            Name = "Cita"
+            X = 920; Y = 280; W = 240
+            Attributes = @(
+                "- id_cita: bigint",
+                "- codigo_cita: string",
+                "- fecha_cita: date",
+                "- hora_inicio: time",
+                "- estado_cita: string",
+                "- id_medico: bigint",
+                "- id_especialidad: bigint"
+            )
+            Methods = @(
+                "+ count(): int",
+                "+ whereBetween(): QueryBuilder",
+                "+ groupBy(): QueryBuilder"
+            )
+        },
+        @{
+            Name = "AtencionMedica"
+            X = 1200; Y = 280; W = 240
+            Attributes = @(
+                "- id_atencion: bigint",
+                "- diagnostico_cie10: string",
+                "- diagnostico_descripcion: text",
+                "- signos_vitales: text",
+                "- fecha_atencion: timestamp"
+            )
+            Methods = @(
+                "+ count(): int",
+                "+ groupBy(): QueryBuilder"
+            )
+        },
+        @{
+            Name = "LaboratorioEstudio"
+            X = 920; Y = 590; W = 240
+            Attributes = @(
+                "- id_estudio: bigint",
+                "- codigo_estudio: string",
+                "- tipo_estudio: string",
+                "- estado: string",
+                "- resultado_diagnostico: text"
+            )
+            Methods = @(
+                "+ count(): int",
+                "+ whereBetween(): QueryBuilder"
+            )
+        },
+        @{
+            Name = "BitacoraAuditoria"
+            X = 1200; Y = 590; W = 240
+            Attributes = @(
+                "- id_bitacora: bigint",
+                "- modulo: string",
+                "- operacion: string",
+                "- valores_nuevos: jsonb",
+                "- fecha_creacion: timestamp"
+            )
+            Methods = @(
+                "+ create(data: array): Model"
+            )
+        }
+    ) `
+    -connections @(
+        @{ From = "Ctrl"; To = "Cita"; Type = "Horizontal"; Dashed = $true },
+        @{ From = "Ctrl"; To = "LaboratorioEstudio"; Type = "Horizontal"; Dashed = $true },
+        @{ From = "Ctrl"; To = "AtencionMedica"; Type = "RightToTop"; Dashed = $true },
+        @{ From = "Ctrl"; To = "BitacoraAuditoria"; Type = "Horizontal"; Dashed = $true }
+    )
+
