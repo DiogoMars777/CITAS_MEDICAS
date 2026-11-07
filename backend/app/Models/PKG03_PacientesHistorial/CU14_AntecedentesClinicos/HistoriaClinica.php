@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Models\PKG03_PacientesHistorial\CU14_AntecedentesClinicos;
 

@@ -152,6 +152,9 @@ class DatabaseSeeder extends Seeder
         // 6. PERMISOS Y PRIVILEGIOS POR ROL
         $this->call(PermisosSeeder::class);
 
+        // 7. DATOS DEMO PARA ATENCIÓN MÉDICA Y AGENDA (CU15 Y CU16)
+        $this->call(AtencionMedicaDemoSeeder::class);
+
         // 7. SINCRONIZACIÓN DE SECUENCIAS POSTGRESQL (AUTO-INCREMENT)
         $tablasSecuencias = [
             'usuarios'           => 'id_usuario',

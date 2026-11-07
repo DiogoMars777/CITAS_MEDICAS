@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Models\PKG01_Seguridad\CU22_BackupRestore;
 
