@@ -476,6 +476,79 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
                     </div>
                   )}
 
+                  {/* SELECTOR RÁPIDO PARA CAMBIO DE DÍA O TURNO */}
+                  {msg.sugerencias?.especialidad && (
+                    <div style={{
+                      marginTop: '0.35rem',
+                      padding: '0.55rem 0.85rem',
+                      borderRadius: '10px',
+                      background: '#f0f9ff',
+                      border: '1px solid #bae6fd',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.4rem',
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: '#0369a1',
+                      }}>
+                        <span>📅 ¿Deseas ver cupos para otro día? Pídelo por voz o pulsa una opción:</span>
+                      </div>
+
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.35rem',
+                      }}>
+                        {[
+                          { dia: 'Lunes', texto: `¿Tienes cupos para el lunes en ${msg.sugerencias.especialidad}?` },
+                          { dia: 'Martes', texto: `¿Tienes disponibilidad para el martes en ${msg.sugerencias.especialidad}?` },
+                          { dia: 'Miércoles', texto: `¿Y para el miércoles en ${msg.sugerencias.especialidad}?` },
+                          { dia: 'Jueves', texto: `¿Tienes horarios para el jueves en ${msg.sugerencias.especialidad}?` },
+                          { dia: 'Viernes', texto: `¿Qué horarios tienes para el viernes en ${msg.sugerencias.especialidad}?` },
+                          { dia: 'Sábado', texto: `¿Hay atención el sábado en ${msg.sugerencias.especialidad}?` },
+                          { dia: 'Turno Mañana', texto: `Prefiero en el turno de la mañana para ${msg.sugerencias.especialidad}` },
+                          { dia: 'Turno Tarde', texto: `Prefiero en el turno de la tarde para ${msg.sugerencias.especialidad}` },
+                        ].map((op, oIdx) => (
+                          <button
+                            key={oIdx}
+                            type="button"
+                            onClick={() => handleEnviarMensaje(op.texto)}
+                            disabled={isLoading}
+                            style={{
+                              padding: '0.25rem 0.55rem',
+                              borderRadius: '6px',
+                              background: '#ffffff',
+                              border: '1px solid #93c5fd',
+                              color: '#0369a1',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#e0f2fe';
+                              e.currentTarget.style.borderColor = '#0284c7';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = '#ffffff';
+                              e.currentTarget.style.borderColor = '#93c5fd';
+                            }}
+                          >
+                            <span>📅 {op.dia}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Hora del mensaje */}
                   <span style={{
                     fontSize: '0.65rem',

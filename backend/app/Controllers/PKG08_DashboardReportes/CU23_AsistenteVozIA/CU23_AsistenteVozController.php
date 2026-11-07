@@ -29,8 +29,9 @@ class CU23_AsistenteVozController extends Controller
     public function interpretarVoz(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'mensaje'     => 'required|string|min:2|max:1000',
-            'id_paciente' => 'nullable|integer|exists:pacientes,id_paciente',
+            'mensaje'         => 'required|string|min:2|max:1000',
+            'id_paciente'     => 'nullable|integer|exists:pacientes,id_paciente',
+            'contexto_previo' => 'nullable|array',
         ], [
             'mensaje.required' => 'Debe proporcionar el mensaje hablado o escrito del paciente.',
             'mensaje.min'      => 'El mensaje es demasiado corto para identificar una consulta clínica.',
@@ -46,7 +47,8 @@ class CU23_AsistenteVozController extends Controller
         try {
             $resultado = $this->service->interpretarVoz(
                 $request->input('mensaje'),
-                $request->input('id_paciente')
+                $request->input('id_paciente'),
+                $request->input('contexto_previo')
             );
 
             return response()->json([

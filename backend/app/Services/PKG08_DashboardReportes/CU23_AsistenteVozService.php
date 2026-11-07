@@ -24,12 +24,13 @@ class CU23_AsistenteVozService
     /**
      * Interpreta la solicitud de voz o texto del paciente utilizando Google Gemini API
      * y busca cupos médicos disponibles en tiempo real.
+     * Soporta contexto previo de conversación para solicitudes multi-turno (ej. pedir otro día).
      */
-    public function interpretarVoz(string $mensaje, ?int $idPaciente = null): array
+    public function interpretarVoz(string $mensaje, ?int $idPaciente = null, ?array $contextoPrevio = null): array
     {
         $mensajeLimpio = trim($mensaje);
         $apiKey = env('GEMINI_API_KEY');
-        $modelo = env('GEMINI_MODEL', 'gemini-3.5-flash');
+        $modelo = env('GEMINI_MODEL', 'gemini-3.5-flash-lite');
 
         $interpretacion = null;
         $motorUsado = 'LOCAL';
@@ -37,7 +38,7 @@ class CU23_AsistenteVozService
         // 1. Intentar llamar a Google Gemini API si la clave está configurada
         if (!empty($apiKey) && strlen($apiKey) > 10) {
             try {
-                $interpretacion = $this->llamarGeminiApi($mensajeLimpio, $apiKey, $modelo);
+                $interpretacion = $this->llamarGeminiApi($mensajeLimpio, $apiKey, $modelo, $contextoPrevio);
                 if ($interpretacion) {
                     $motorUsado = 'GEMINI_API';
                 }
@@ -49,11 +50,11 @@ class CU23_AsistenteVozService
 
         // 2. Si no hay API Key o falló la llamada, usar el motor de respaldo local
         if (!$interpretacion) {
-            $interpretacion = $this->motorLocalInterpretacion($mensajeLimpio);
+            $interpretacion = $this->motorLocalInterpretacion($mensajeLimpio, $contextoPrevio);
             $motorUsado = 'MOTOR_LOCAL_RESIDUO';
         }
 
-        // 3. Buscar cupos reales disponibles en PostgreSQL según la especialidad y turno inferido
+        // 3. Buscar cupos reales disponibles en PostgreSQL según la especialidad y día/turno solicitado
         $cuposDisponibles = $this->buscarCuposDisponibles(
             $interpretacion['especialidad'],
             $interpretacion['turno_preferido'] ?? 'CUALQUIERA',
@@ -61,7 +62,7 @@ class CU23_AsistenteVozService
         );
 
         // 4. Enriquecer el guión de voz final para Text-to-Speech
-        $guionVozFinal = $this->generarGuionVozFinal($interpretacion, $cuposDisponibles);
+        $guionVozFinal = $this->generarGuionVozFinal($interpretacion, $cuposDisponibles, $contextoPrevio);
 
         // 5. Guardar en la bitácora de conversaciones IA
         $idConversacion = null;
@@ -102,7 +103,7 @@ class CU23_AsistenteVozService
     /**
      * Llamada a la API REST oficial de Google Gemini (generateContent)
      */
-    private function llamarGeminiApi(string $mensaje, string $apiKey, string $modelo): ?array
+    private function llamarGeminiApi(string $mensaje, string $apiKey, string $modelo, ?array $contextoPrevio = null): ?array
     {
         // Lista de especialidades reales de la clínica
         $especialidadesDisponibles = DB::table('especialidades')
@@ -112,23 +113,35 @@ class CU23_AsistenteVozService
 
         $listaEspStr = implode(', ', $especialidadesDisponibles);
 
+        $contextoInfo = "";
+        if (!empty($contextoPrevio['especialidad'])) {
+            $espPrev = $contextoPrevio['especialidad'];
+            $turnoPrev = $contextoPrevio['turno'] ?? 'CUALQUIERA';
+            $contextoInfo = "\nCONTEXTO DE CONVERSACIÓN PREVIA: El paciente venía consultando sobre la especialidad de '{$espPrev}' (turno: {$turnoPrev}). Si el paciente solo pide cambiar de día o fecha (ej: '¿Y para el miércoles?', 'Mejor el martes', '¿Tienes para otro día?'), DEBES MANTENER la especialidad '{$espPrev}' y extraer el nuevo día y turno solicitados.";
+        }
+
         $systemInstruction = "Eres 'Dra. Sofía', el Asistente Médico Inteligente por Voz de 'Clínica Vida Salud' (Bolivia).
 Tu objetivo es analizar el mensaje del paciente (sus síntomas, queja de salud o especialidad requerida, y el horario o día que prefiere).
-Especialidades válidas en la clínica: [{$listaEspStr}].
-Debes clasificar los síntomas en una de las especialidades válidas y extraer el turno ('MAÑANA', 'TARDE', o 'CUALQUIERA') y día preferido.
+Especialidades válidas en la clínica: [{$listaEspStr}].{$contextoInfo}
+Debes clasificar los síntomas en una de las especialidades válidas y extraer el turno ('MAÑANA', 'TARDE', o 'CUALQUIERA') y día preferido ('lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'mañana', 'hoy', etc.).
 Genera un guión de voz muy cálido, profesional y conciso (máximo 35 palabras) para ser leído al paciente por voz.
 Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
 {
   \"especialidad\": \"NombreExactoDeLaEspecialidad\",
   \"sintomas\": [\"sintoma1\", \"sintoma2\"],
   \"turno_preferido\": \"MAÑANA\" | \"TARDE\" | \"CUALQUIERA\",
-  \"dia_preferido\": \"lunes\" | \"martes\" | \"mañana\" | null,
+  \"dia_preferido\": \"lunes\" | \"martes\" | \"miércoles\" | \"jueves\" | \"viernes\" | \"sábado\" | \"mañana\" | null,
   \"urgencia\": \"LEVE\" | \"MODERADO\" | \"URGENTE\",
   \"justificacion_medica\": \"Explicación clínica breve del motivo de la especialidad\",
   \"guion_voz\": \"Texto corto para ser hablado por el sintetizador de voz\"
 }";
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelo}:generateContent?key={$apiKey}";
+
+        $userTextPrompt = "Mensaje del paciente: \"{$mensaje}\"";
+        if (!empty($contextoPrevio['especialidad'])) {
+            $userTextPrompt = "Contexto previo: Estábamos buscando cita en {$contextoPrevio['especialidad']}.\nNuevo mensaje del paciente: \"{$mensaje}\"";
+        }
 
         $response = Http::withoutVerifying()->withHeaders([
             'Content-Type' => 'application/json',
@@ -137,7 +150,7 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
                 [
                     'role' => 'user',
                     'parts' => [
-                        ['text' => "Mensaje del paciente: \"{$mensaje}\""]
+                        ['text' => $userTextPrompt]
                     ]
                 ]
             ],
@@ -204,7 +217,7 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
     /**
      * Motor heurístico clínico local de respaldo (Triaje y NLP en Español Boliviano)
      */
-    private function motorLocalInterpretacion(string $mensaje): array
+    private function motorLocalInterpretacion(string $mensaje, ?array $contextoPrevio = null): array
     {
         $m = mb_strtolower($mensaje, 'UTF-8');
 
@@ -219,7 +232,7 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
         }
 
         // 2. Detección de Día preferido
-        $dias = ['lunes', 'martes', 'miércoles', 'miercoles', 'jueves', 'viernes', 'sábado', 'sabado', 'hoy', 'mañana'];
+        $dias = ['lunes', 'martes', 'miércoles', 'miercoles', 'jueves', 'viernes', 'sábado', 'sabado', 'hoy', 'pasado mañana', 'mañana'];
         $diaPreferido = null;
         foreach ($dias as $d) {
             if (str_contains($m, $d)) {
@@ -229,7 +242,7 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
         }
 
         // 3. Reglas Clínicas de Triaje (Mapeo Síntoma -> Especialidad)
-        $especialidad = 'Medicina General';
+        $especialidad = null;
         $sintomas = [];
         $urgencia = 'MODERADO';
         $justificacion = 'Evaluación clínica inicial en Medicina General.';
@@ -283,17 +296,27 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
             $sintomas[] = 'Afección cutánea o dermatológica';
             $justificacion = 'Evaluación dermatológica de lesiones o síntomas en la piel.';
         }
-        // Medicina General por defecto
-        else {
-            $especialidad = 'Medicina General';
-            if (preg_match('/cabeza|migraña/i', $m)) $sintomas[] = 'Cefalea / dolor de cabeza';
-            if (preg_match('/fiebre|temperatura/i', $m)) $sintomas[] = 'Fiebre';
-            if (preg_match('/gripe|tos|resfriado/i', $m)) $sintomas[] = 'Cuadro respiratorio común';
-            if (preg_match('/est[oó]mago|diarrea|n[aá]usea/i', $m)) $sintomas[] = 'Molestia digestiva';
-            if (empty($sintomas)) $sintomas[] = 'Consulta clínica general';
+
+        // Si no se detectó síntoma específico, verificar si hay contexto previo de especialidad (p. ej. cambio de día)
+        if (!$especialidad) {
+            if (!empty($contextoPrevio['especialidad'])) {
+                $especialidad = $contextoPrevio['especialidad'];
+                $sintomas = $contextoPrevio['sintomas'] ?? [];
+                if ($turno === 'CUALQUIERA' && !empty($contextoPrevio['turno'])) {
+                    $turno = $contextoPrevio['turno'];
+                }
+                $justificacion = "Continuación de la consulta previa para {$especialidad}.";
+            } else {
+                $especialidad = 'Medicina General';
+                if (preg_match('/cabeza|migraña/i', $m)) $sintomas[] = 'Cefalea / dolor de cabeza';
+                if (preg_match('/fiebre|temperatura/i', $m)) $sintomas[] = 'Fiebre';
+                if (preg_match('/gripe|tos|resfriado/i', $m)) $sintomas[] = 'Cuadro respiratorio común';
+                if (preg_match('/est[oó]mago|diarrea|n[aá]usea/i', $m)) $sintomas[] = 'Molestia digestiva';
+                if (empty($sintomas)) $sintomas[] = 'Consulta clínica general';
+            }
         }
 
-        $guionVoz = "Hola. Por los síntomas que indicas, te recomiendo agendar en {$especialidad}. He buscado los cupos disponibles.";
+        $guionVoz = "Hola. He buscado los cupos disponibles en {$especialidad} para tu preferencia horaria.";
 
         return [
             'especialidad'          => $especialidad,
@@ -307,7 +330,83 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
     }
 
     /**
+     * Determina la lista de fechas candidatas según la preferencia de día del paciente
+     */
+    private function determinarFechasCandidatas(?string $diaPreferido, Carbon $ahoraBolivia): array
+    {
+        $fechasCandidatas = [];
+        $diaStr = $diaPreferido ? mb_strtolower(trim($diaPreferido), 'UTF-8') : '';
+
+        $diasMap = [
+            'lunes'     => 1,
+            'martes'    => 2,
+            'miércoles' => 3,
+            'miercoles' => 3,
+            'jueves'    => 4,
+            'viernes'   => 5,
+            'sábado'    => 6,
+            'sabado'    => 6,
+        ];
+
+        // 1. Fecha explícita en formato YYYY-MM-DD
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $diaStr)) {
+            $fechasCandidatas[] = Carbon::parse($diaStr, $this->timezone);
+            return $fechasCandidatas;
+        }
+
+        // 2. Expresiones relativas: hoy, pasado mañana, mañana
+        if (str_contains($diaStr, 'hoy')) {
+            $fechasCandidatas[] = $ahoraBolivia->copy();
+            return $fechasCandidatas;
+        }
+
+        if (str_contains($diaStr, 'pasado mañ') || str_contains($diaStr, 'pasado man')) {
+            $fechasCandidatas[] = $ahoraBolivia->copy()->addDays(2);
+            return $fechasCandidatas;
+        }
+
+        if (str_contains($diaStr, 'mañ') || str_contains($diaStr, 'man')) {
+            $fechasCandidatas[] = $ahoraBolivia->copy()->addDays(1);
+            return $fechasCandidatas;
+        }
+
+        // 3. Día de la semana específico (lunes .. sábado)
+        $diaIso = null;
+        foreach ($diasMap as $nombre => $iso) {
+            if (str_contains($diaStr, $nombre)) {
+                $diaIso = $iso;
+                break;
+            }
+        }
+
+        if ($diaIso !== null) {
+            $cand = $ahoraBolivia->copy()->addDays(1);
+            for ($k = 0; $k < 7; $k++) {
+                if ($cand->dayOfWeekIso === $diaIso) {
+                    $fechasCandidatas[] = $cand->copy();
+                    // Semana siguiente como opción por si ese día está completo
+                    $fechasCandidatas[] = $cand->copy()->addWeeks(1);
+                    break;
+                }
+                $cand->addDay();
+            }
+            return $fechasCandidatas;
+        }
+
+        // 4. Si no se especificó un día concreto o pide "otro día", escanear los próximos 14 días
+        for ($i = 1; $i <= 14; $i++) {
+            $f = $ahoraBolivia->copy()->addDays($i);
+            if ($f->dayOfWeekIso !== 7) { // Excluir domingos
+                $fechasCandidatas[] = $f;
+            }
+        }
+
+        return $fechasCandidatas;
+    }
+
+    /**
      * Busca cupos reales disponibles en la base de datos PostgreSQL
+     * Respeta la especialidad, el turno (MAÑANA/TARDE) y el día preferido (lunes, martes, etc.)
      */
     public function buscarCuposDisponibles(string $nombreEspecialidad, string $turnoPreferido = 'CUALQUIERA', ?string $diaPreferido = null): array
     {
@@ -334,17 +433,17 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
         })->where('estado', 'ACTIVO')->get();
 
         if ($medicos->isEmpty()) {
-            // Fallback a cualquier médico activo
             $medicos = Medico::where('estado', 'ACTIVO')->take(2)->get();
         }
 
-        $cupos = [];
-        $diasAScanear = 7;
+        $fechasCandidatas = $this->determinarFechasCandidatas($diaPreferido, $ahoraBolivia);
+        $diaStr = $diaPreferido ? mb_strtolower(trim($diaPreferido), 'UTF-8') : '';
+        $esDiaEspecifico = (!empty($diaStr) && !str_contains($diaStr, 'otro'));
 
-        for ($i = 1; $i <= $diasAScanear && count($cupos) < 4; $i++) {
-            $fechaObj = $ahoraBolivia->copy()->addDays($i);
-            // Ignorar domingos si la clínica descansa
-            if ($fechaObj->dayOfWeekIso === 7) continue;
+        $cupos = [];
+
+        foreach ($fechasCandidatas as $fechaObj) {
+            if ($fechaObj->dayOfWeekIso === 7) continue; // Clínica descansa en domingo
 
             $fechaStr = $fechaObj->format('Y-m-d');
             $diaSemana = $fechaObj->dayOfWeekIso; // 1: Lunes .. 6: Sábado
@@ -367,10 +466,16 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
                     if ($turnoPreferido === 'MAÑANA' && !$esManana) continue;
                     if ($turnoPreferido === 'TARDE' && $esManana) continue;
 
-                    // Generar un bloque candidato
                     $cursor = $horaInicio->copy();
+                    // Si la fecha es hoy, sólo permitir horarios a futuro (+30 min)
+                    if ($fechaObj->isToday() && $cursor->lte($ahoraBolivia)) {
+                        $cursor = $ahoraBolivia->copy()->addMinutes(30);
+                    }
+
                     while ($cursor->lt($horaFin) && count($cupos) < 4) {
                         $bloqueFin = $cursor->copy()->addMinutes($bloqueMin);
+                        if ($bloqueFin->gt($horaFin)) break;
+
                         $horaInicioStr = $cursor->format('H:i:s');
                         $horaFinStr = $bloqueFin->format('H:i:s');
 
@@ -398,15 +503,30 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
                                 'etiqueta_amigable' => "{$nombreDia} {$fechaObj->format('d/m')} a las " . substr($horaInicioStr, 0, 5),
                             ];
 
-                            // Saltar 30 minutos para ofrecer opciones distribuidas
-                            $cursor->addMinutes(30);
-                            break;
+                            // Si no es un día específico, dar variedad saltando a la siguiente fecha/médico
+                            if (!$esDiaEspecifico) {
+                                $cursor->addMinutes(30);
+                                break;
+                            } else {
+                                // En día específico, ofrecer múltiples opciones escalonadas en ese día
+                                $cursor->addMinutes(30);
+                                continue;
+                            }
                         }
 
                         $cursor->addMinutes($bloqueMin);
                     }
+                    if (count($cupos) >= 4) break;
                 }
+                if (count($cupos) >= 4) break;
             }
+
+            // Si es un día específico y ya conseguimos cupos, no mezclar con la siguiente semana
+            if ($esDiaEspecifico && count($cupos) > 0) {
+                break;
+            }
+
+            if (count($cupos) >= 4) break;
         }
 
         return $cupos;
@@ -414,22 +534,33 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
 
     /**
      * Construye el guión de voz final natural para el sintetizador de voz (TTS)
+     * Responde de forma personalizada según si se solicitó un día específico o una consulta inicial
      */
-    private function generarGuionVozFinal(array $interpretacion, array $cupos): string
+    private function generarGuionVozFinal(array $interpretacion, array $cupos, ?array $contextoPrevio = null): string
     {
         $esp = $interpretacion['especialidad'];
         $sintomasStr = !empty($interpretacion['sintomas']) ? implode(', ', $interpretacion['sintomas']) : '';
+        $diaReq = $interpretacion['dia_preferido'] ?? null;
 
         if (empty($cupos)) {
-            return "He evaluado tu solicitud para {$esp}. En este momento no encontré cupos directos para la preferencia indicada, pero puedes seleccionar otro día o solicitar la apertura de sobrecupo en recepción.";
+            if ($diaReq) {
+                return "He revisado para el {$diaReq} en {$esp}, pero todos los cupos están ocupados. Puedes seleccionar otro día o solicitar sobrecupo en recepción.";
+            }
+            return "He evaluado tu solicitud para {$esp}. En este momento no encontré cupos directos para la preferencia indicada, pero puedes seleccionar otro día de la lista.";
         }
 
         $primerCupo = $cupos[0];
         $diaHora = "{$primerCupo['dia_nombre']} {$primerCupo['hora_inicio']}";
         $medico = $primerCupo['nombre_medico'];
+        $cantCupos = count($cupos);
+
+        // Si es una solicitud de cambio de día (ej: "y para el miércoles?")
+        if ($diaReq || !empty($contextoPrevio['especialidad'])) {
+            return "Con gusto. Para el {$primerCupo['dia_nombre']} en {$esp} encontré {$cantCupos} opciones disponibles con {$medico}, a partir de las {$primerCupo['hora_inicio']}. Elige el cupo que prefieras.";
+        }
 
         if (!empty($sintomasStr)) {
-            return "Por los síntomas que mencionas ({$sintomasStr}), te recomiendo consultar en {$esp}. Encontré un horario disponible con {$medico} para el {$diaHora}. Presiona confirmar para apartar tu ficha.";
+            return "Por tus síntomas de {$sintomasStr}, te recomiendo {$esp}. Tengo disponible a {$medico} para el {$diaHora}. Presiona reservar para apartar tu cupo.";
         }
 
         return "Para {$esp}, encontré disponibilidad con {$medico} el {$diaHora}. Puedes presionar el botón de reserva para confirmar tu cita ahora mismo.";

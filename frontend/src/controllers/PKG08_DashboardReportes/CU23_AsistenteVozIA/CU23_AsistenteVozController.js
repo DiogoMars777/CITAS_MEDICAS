@@ -189,7 +189,19 @@ export function useAsistenteVoz(currentUser) {
 
     try {
       const idPaciente = currentUser?.id_paciente || null;
-      const res = await CU23_AsistenteVozModel.interpretarVoz(texto, idPaciente);
+
+      // Identificar contexto previo para retención multi-turno (especialidad, turno, síntomas)
+      const ultimaSugerencia = [...messages].reverse().find(
+        (m) => m.sugerencias && m.sugerencias.especialidad
+      );
+      const contextoPrevio = ultimaSugerencia ? {
+        especialidad: ultimaSugerencia.sugerencias.especialidad,
+        turno: ultimaSugerencia.sugerencias.turno,
+        sintomas: ultimaSugerencia.sugerencias.sintomas,
+        id_conversacion: ultimaSugerencia.sugerencias.idConversacion,
+      } : null;
+
+      const res = await CU23_AsistenteVozModel.interpretarVoz(texto, idPaciente, contextoPrevio);
 
       const iaMsg = {
         id: `ia-${Date.now()}`,

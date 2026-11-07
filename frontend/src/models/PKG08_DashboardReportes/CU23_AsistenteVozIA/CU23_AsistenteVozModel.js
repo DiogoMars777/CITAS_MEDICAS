@@ -36,13 +36,15 @@ async function fetchSeguro(url, options = {}) {
 export const CU23_AsistenteVozModel = {
   /**
    * Envía mensaje hablado/escrito a la IA para interpretación y búsqueda de cupos
+   * Soporta contextoPrevio para retención de especialidad en cambios de día u horario
    */
-  async interpretarVoz(mensaje, idPaciente = null) {
+  async interpretarVoz(mensaje, idPaciente = null, contextoPrevio = null) {
     const data = await fetchSeguro(`${API_BASE}/interpretar-voz`, {
       method: 'POST',
       body: JSON.stringify({
         mensaje,
         id_paciente: idPaciente,
+        contexto_previo: contextoPrevio,
       }),
     });
     return data.data;
