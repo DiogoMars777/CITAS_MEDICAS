@@ -235,8 +235,10 @@ class AtencionMedicaDemoSeeder extends Seeder
         ];
 
         foreach ($historiasData as $h) {
+            $idPaciente = $h['id_paciente'];
+            unset($h['id_historia_clinica']);
             DB::table('historias_clinicas')->updateOrInsert(
-                ['id_historia_clinica' => $h['id_historia_clinica']],
+                ['id_paciente' => $idPaciente],
                 array_merge($h, [
                     'fecha_apertura'      => Carbon::now()->subMonths(6),
                     'fecha_actualizacion' => Carbon::now(),
@@ -378,11 +380,13 @@ class AtencionMedicaDemoSeeder extends Seeder
         }
 
         // 6. ATENCIÓN MÉDICA DE EJEMPLO PARA LA CITA 1
+        $historia1 = DB::table('historias_clinicas')->where('id_paciente', 1)->first();
+        $idHistoria1 = $historia1 ? $historia1->id_historia_clinica : 1;
+
         DB::table('atenciones_medicas')->updateOrInsert(
             ['id_cita' => 1],
             [
-                'id_atencion'             => 1,
-                'id_historia_clinica'     => 1,
+                'id_historia_clinica'     => $idHistoria1,
                 'id_medico'               => 1,
                 'motivo_consulta'         => 'Control de presión arterial y cefalea matutina',
                 'sintomas'                => 'Paciente refiere cefalea holocraneal opresiva intermitente de 3 días de evolución, sin fotofobia.',
