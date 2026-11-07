@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Models\PKG08_DashboardReportes\CU20_Dashboard;
 

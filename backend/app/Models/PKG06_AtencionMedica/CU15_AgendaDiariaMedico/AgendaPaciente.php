@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Models\PKG06_AtencionMedica\CU15_AgendaDiariaMedico;
 

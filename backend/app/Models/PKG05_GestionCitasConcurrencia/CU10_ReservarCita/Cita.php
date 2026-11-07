@@ -65,4 +65,20 @@ class Cita extends Model
     {
         return $this->belongsTo(Usuario::class, 'creado_por', 'id_usuario');
     }
+
+    /**
+     * Atención médica registrada
+     */
+    public function atencionMedica()
+    {
+        return $this->hasOne(\App\Models\PKG06_AtencionMedica\CU16_AtenderConsulta\AtencionMedica::class, 'id_cita', 'id_cita');
+    }
+
+    /**
+     * Órdenes o estudios de laboratorio vinculados
+     */
+    public function laboratorios()
+    {
+        return $this->hasMany(\App\Models\PKG07_Laboratorios\CU18_VisualizarEstudios\LaboratorioEstudioConsulta::class, 'id_cita', 'id_cita');
+    }
 }

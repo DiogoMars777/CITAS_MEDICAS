@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Models\PKG05_GestionCitasConcurrencia\CU13_ControlAsistencia;
 

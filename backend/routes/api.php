@@ -15,6 +15,12 @@ use App\Controllers\PKG05_GestionCitasConcurrencia\CU11_ReprogramarCita\CU11_Rep
 use App\Controllers\PKG05_GestionCitasConcurrencia\CU12_CancelarCita\CU12_CancelacionController;
 use App\Controllers\PKG05_GestionCitasConcurrencia\CU13_ControlAsistencia\CU13_AsistenciaController;
 use App\Controllers\PKG03_PacientesHistorial\CU14_AntecedentesClinicos\CU14_AntecedentesClinicosController;
+use App\Controllers\PKG06_AtencionMedica\CU15_AgendaDiariaMedico\CU15_AgendaMedicoController;
+use App\Controllers\PKG06_AtencionMedica\CU16_AtenderConsulta\CU16_AtencionMedicaController;
+use App\Controllers\PKG07_Laboratorios\CU17_CargarEstudios\CU17_CargaEstudioController;
+use App\Controllers\PKG07_Laboratorios\CU18_VisualizarEstudios\CU18_VisualizarEstudiosController;
+use App\Controllers\PKG08_DashboardReportes\CU19_Recordatorios\CU19_RecordatorioController;
+use App\Controllers\PKG08_DashboardReportes\CU20_Dashboard\CU20_DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -172,6 +178,59 @@ Route::prefix('antecedentes-clinicos')->group(function () {
     Route::get('/paciente/{idPaciente}', [CU14_AntecedentesClinicosController::class, 'show']);
     Route::put('/paciente/{idPaciente}', [CU14_AntecedentesClinicosController::class, 'update']);
 });
+
+// ==========================================
+// CU15: Visualizar Agenda Médica Diaria (Privacidad Estricta)
+// ==========================================
+Route::prefix('agenda-medica')->group(function () {
+    Route::get('/', [CU15_AgendaMedicoController::class, 'agendaDiaria']);
+    Route::get('/expediente/{idCita}', [CU15_AgendaMedicoController::class, 'expedientePaciente']);
+});
+
+// ==========================================
+// CU16: Atender Consulta y Registrar Evolución Clínica
+// ==========================================
+Route::prefix('atencion-medica')->group(function () {
+    Route::get('/cita/{idCita}', [CU16_AtencionMedicaController::class, 'iniciarConsulta']);
+    Route::post('/cita/{idCita}', [CU16_AtencionMedicaController::class, 'guardarAtencion']);
+});
+
+// ==========================================
+// CU17: Cargar Estudios y Resultados de Laboratorio
+// ==========================================
+Route::prefix('laboratorios/carga')->group(function () {
+    Route::get('/', [CU17_CargaEstudioController::class, 'index']);
+    Route::get('/buscar-paciente/{identificador}', [CU17_CargaEstudioController::class, 'buscarPaciente']);
+    Route::post('/', [CU17_CargaEstudioController::class, 'store']);
+    Route::post('/{id}/resultado', [CU17_CargaEstudioController::class, 'guardarResultado']);
+});
+
+// ==========================================
+// CU18: Visualizar y Descargar Resultados de Laboratorio
+// ==========================================
+Route::prefix('laboratorios/visor')->group(function () {
+    Route::get('/', [CU18_VisualizarEstudiosController::class, 'index']);
+    Route::get('/{id}', [CU18_VisualizarEstudiosController::class, 'show']);
+});
+
+// ==========================================
+// CU19: Gestionar Recordatorios y Notificaciones
+// ==========================================
+Route::prefix('recordatorios')->group(function () {
+    Route::get('/', [CU19_RecordatorioController::class, 'index']);
+    Route::post('/escanear-24h', [CU19_RecordatorioController::class, 'escanearProximas24Horas']);
+    Route::post('/{id}/reenviar', [CU19_RecordatorioController::class, 'reenviar']);
+    Route::post('/', [CU19_RecordatorioController::class, 'store']);
+});
+
+// ==========================================
+// CU20: Dashboard Operativo y Administrativo
+// ==========================================
+Route::prefix('dashboard')->group(function () {
+    Route::get('/metricas', [CU20_DashboardController::class, 'metricas']);
+});
+
+
 
 
 

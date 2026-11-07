@@ -63,6 +63,22 @@ class Paciente extends Model
     }
 
     /**
+     * Atenciones y evoluciones médicas previas
+     */
+    public function atencionesMedicas(): HasMany
+    {
+        return $this->hasMany(\App\Models\PKG06_AtencionMedica\CU16_AtenderConsulta\AtencionMedica::class, 'id_historia_clinica', 'id_paciente');
+    }
+
+    /**
+     * Estudios clínicos de laboratorio
+     */
+    public function laboratorios(): HasMany
+    {
+        return $this->hasMany(\App\Models\PKG07_Laboratorios\CU18_VisualizarEstudios\LaboratorioEstudioConsulta::class, 'id_paciente', 'id_paciente');
+    }
+
+    /**
      * Nombre completo
      */
     public function getNombreCompletoAttribute(): string

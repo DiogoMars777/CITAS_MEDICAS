@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Models\PKG04_AgendasHorarios\CU09_ConsultarDisponibilidad;
 

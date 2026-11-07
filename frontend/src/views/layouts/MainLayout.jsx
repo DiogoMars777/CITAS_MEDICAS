@@ -31,6 +31,12 @@ import CU11_ReprogramarCitaView from '../PKG05_GestionCitasConcurrencia/CU11_Rep
 import CU12_CancelarCitaView from '../PKG05_GestionCitasConcurrencia/CU12_CancelarCita/CU12_CancelarCitaView';
 import CU13_AsistenciaView from '../PKG05_GestionCitasConcurrencia/CU13_ControlAsistencia/CU13_AsistenciaView';
 import CU14_AntecedentesView from '../PKG03_PacientesHistorial/CU14_AntecedentesClinicos/CU14_AntecedentesView';
+import CU15_AgendaMedicoView from '../PKG06_AtencionMedica/CU15_AgendaDiariaMedico/CU15_AgendaMedicoView';
+import CU16_ConsultaMedicaView from '../PKG06_AtencionMedica/CU16_AtenderConsulta/CU16_ConsultaMedicaView';
+import CU17_CargarEstudiosView from '../PKG07_Laboratorios/CU17_CargarEstudios/CU17_CargarEstudiosView';
+import CU18_VisualizarEstudiosView from '../PKG07_Laboratorios/CU18_VisualizarEstudios/CU18_VisualizarEstudiosView';
+import CU19_RecordatoriosView from '../PKG08_DashboardReportes/CU19_Recordatorios/CU19_RecordatoriosView';
+import CU20_DashboardView from '../PKG08_DashboardReportes/CU20_Dashboard/CU20_DashboardView';
 import SeniorCUPlaceholder from '../common/SeniorCUPlaceholder';
 
 // Iconos por paquete
@@ -48,15 +54,19 @@ const PACKAGE_ICONS = {
 export const MainLayout = ({ currentUser, onLogout }) => {
   // Caso de uso activo por defecto: CU03 (o CU02)
   const [activeCUId, setActiveCUId] = useState('CU03');
+  const [selectedCitaForCU16, setSelectedCitaForCU16] = useState(2);
 
   // Control de apertura en móvil
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Paquetes expandidos en el acordeón (por defecto PKG01, PKG04, PKG05 expandidos)
+  // Paquetes expandidos en el acordeón (por defecto PKG01, PKG04, PKG05, PKG06, PKG07, PKG08 expandidos)
   const [expandedPackages, setExpandedPackages] = useState({
     PKG01: true,
     PKG04: true,
     PKG05: true,
+    PKG06: true,
+    PKG07: true,
+    PKG08: true,
   });
 
   // Reloj hora boliviana discreto
@@ -311,7 +321,7 @@ export const MainLayout = ({ currentUser, onLogout }) => {
                             </span>
                           </div>
 
-                          {['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14'].includes(cu.id) && (
+                          {['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20'].includes(cu.id) && (
                             <span style={{
                               padding: '0.12rem 0.4rem',
                               borderRadius: '4px',
@@ -503,6 +513,52 @@ export const MainLayout = ({ currentUser, onLogout }) => {
 
         {/* ÁREA DE CONTENIDO — CANVAS EJECUTIVO CLARO */}
         <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc', padding: '1.5rem' }}>
+          {activeCUId === 'CU20' && (
+            <CU20_DashboardView
+              onNavigateToAgenda={() => {
+                setActiveCUId('CU15');
+                setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
+              }}
+              onNavigateToLaboratorios={() => {
+                setActiveCUId('CU18');
+                setExpandedPackages((prev) => ({ ...prev, PKG07: true }));
+              }}
+            />
+          )}
+
+          {activeCUId === 'CU19' && <CU19_RecordatoriosView />}
+
+          {activeCUId === 'CU18' && <CU18_VisualizarEstudiosView />}
+
+          {activeCUId === 'CU17' && (
+            <CU17_CargarEstudiosView
+              onNavigateToCU18={() => {
+                setActiveCUId('CU18');
+                setExpandedPackages((prev) => ({ ...prev, PKG07: true }));
+              }}
+            />
+          )}
+
+          {activeCUId === 'CU16' && (
+            <CU16_ConsultaMedicaView
+              initialCitaId={selectedCitaForCU16}
+              onBackToAgenda={() => {
+                setActiveCUId('CU15');
+                setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
+              }}
+            />
+          )}
+
+          {activeCUId === 'CU15' && (
+            <CU15_AgendaMedicoView
+              onNavigateToCU16={(idCita) => {
+                setSelectedCitaForCU16(idCita);
+                setActiveCUId('CU16');
+                setExpandedPackages((prev) => ({ ...prev, PKG06: true }));
+              }}
+            />
+          )}
+
           {activeCUId === 'CU14' && <CU14_AntecedentesView />}
 
           {activeCUId === 'CU13' && <CU13_AsistenciaView />}
@@ -537,7 +593,7 @@ export const MainLayout = ({ currentUser, onLogout }) => {
             />
           )}
 
-          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14'].includes(activeCUId) && (
+          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20'].includes(activeCUId) && (
             <SeniorCUPlaceholder
               cu={activeCUInfo.cu}
               pkg={activeCUInfo.pkg}
