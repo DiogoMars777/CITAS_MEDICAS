@@ -23,6 +23,7 @@ use App\Controllers\PKG08_DashboardReportes\CU19_Recordatorios\CU19_Recordatorio
 use App\Controllers\PKG08_DashboardReportes\CU20_Dashboard\CU20_DashboardController;
 use App\Controllers\PKG08_DashboardReportes\CU21_Reportes\CU21_ReportesController;
 use App\Controllers\PKG01_Seguridad\CU22_BackupRestore\CU22_BackupRestoreController;
+use App\Controllers\PKG08_DashboardReportes\CU23_AsistenteVozIA\CU23_AsistenteVozController;
 
 /*
 |--------------------------------------------------------------------------
@@ -257,6 +258,18 @@ Route::prefix('backups')->group(function () {
     Route::get('/{id}/descargar', [CU22_BackupRestoreController::class, 'descargar']);
     Route::post('/{id}/restaurar', [CU22_BackupRestoreController::class, 'restaurar']);
     Route::delete('/{id}', [CU22_BackupRestoreController::class, 'destroy']);
+});
+
+// ==========================================
+// CU23: Asistente IA por Voz para Reserva Rápida de Citas (Google Gemini API)
+// ==========================================
+Route::prefix('ia-asistente')->group(function () {
+    Route::post('/interpretar-voz', [CU23_AsistenteVozController::class, 'interpretarVoz']);
+    Route::post('/confirmar-reserva', [CU23_AsistenteVozController::class, 'confirmarReserva']);
+    Route::get('/ejemplos', [CU23_AsistenteVozController::class, 'ejemplos']);
+    Route::get('/estado-motor', [CU23_AsistenteVozController::class, 'estadoMotor']);
+    Route::post('/configuracion-gemini', [CU23_AsistenteVozController::class, 'guardarConfiguracion']);
+    Route::get('/historial', [CU23_AsistenteVozController::class, 'historial']);
 });
 
 

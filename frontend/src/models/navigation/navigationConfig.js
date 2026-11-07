@@ -297,8 +297,8 @@ export const PACKAGES_CONFIG = [
   {
     id: 'PKG08',
     codigo: 'PKG08_DashboardReportes',
-    nombre: 'Dashboard y Reportes Ejecutivos',
-    descripcion: 'Métricas gerenciales, tiempos de espera y exportación a PDF/Excel',
+    nombre: 'Dashboard, Reportes e Inteligencia Artificial',
+    descripcion: 'Métricas gerenciales, reportes estadísticos y Asistente IA por voz (Google Gemini)',
     color: '#6366f1', // Indigo
     glow: 'rgba(99, 102, 241, 0.4)',
     casosDeUso: [
@@ -334,6 +334,17 @@ export const PACKAGES_CONFIG = [
         estado: 'completo',
         tablas: ['citas', 'especialidades', 'medicos', 'atenciones_medicas', 'laboratorios_estudios'],
         controlador: 'CU21_ReportesController',
+      },
+      {
+        id: 'CU23',
+        codigo: 'CU23_AsistenteVozIA',
+        numero: 'CU23',
+        titulo: 'Asistente IA por voz para reserva rápida',
+        actores: 'Paciente, Recepcionista, Administrador',
+        descripcion: 'Asistente médico con reconocimiento y síntesis de voz (Google Gemini API) que interpreta síntomas y horarios para agendar citas en segundos.',
+        estado: 'completo',
+        tablas: ['citas', 'especialidades', 'medicos', 'turnos_medicos', 'ia_conversaciones'],
+        controlador: 'CU23_AsistenteVozController',
       },
     ],
   },
