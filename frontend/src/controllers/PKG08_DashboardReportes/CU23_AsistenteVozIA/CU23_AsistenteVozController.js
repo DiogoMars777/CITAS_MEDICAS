@@ -7,7 +7,7 @@ export function useAsistenteVoz(currentUser) {
     {
       id: 'welcome-01',
       sender: 'ia',
-      text: '¡Hola! Soy la Dra. Sofía, tu Asistente Médica de Clínica Vida Salud. Cuéntame con tus propias palabras qué síntomas tienes o qué especialidad buscas, y para qué día u horario prefieres tu cita. Presiona el botón del micrófono para hablar o escribe en el chat.',
+      text: '¡Hola! Soy la Dra. Sofía, tu Asistente Médica con Inteligencia Artificial de Clínica Vida Salud. Cuéntame con tus propias palabras qué síntomas tienes o qué especialidad buscas, y para qué horario o día prefieres tu cita. Presiona el micrófono para hablar o escribe en el chat.',
       guionVoz: '¡Hola! Soy la Dra. Sofía, tu Asistente Médica de Clínica Vida Salud. Dime qué síntomas tienes y en qué horario prefieres tu cita para agendarla de inmediato.',
       timestamp: new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }),
       cupos: [],
@@ -24,16 +24,14 @@ export function useAsistenteVoz(currentUser) {
   // Estado del motor Gemini
   const [motorInfo, setMotorInfo] = useState({
     activo: true,
-    usa_gemini_api: false,
-    motor_nombre: 'Cargando...',
-    modelo: 'gemini-2.5-flash',
-    key_enmascarada: 'Verificando...',
+    usa_gemini_api: true,
+    motor_nombre: 'Google Gemini 3.5 Flash',
+    modelo: 'gemini-3.5-flash',
   });
 
-  // Ejemplos y modal
+  // Ejemplos y modales
   const [ejemplos, setEjemplos] = useState([]);
   const [ticketConfirmado, setTicketConfirmado] = useState(null);
-  const [modalConfigOpen, setModalConfigOpen] = useState(false);
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
   const [historialList, setHistorialList] = useState([]);
   const [transcripcionEnVivo, setTranscripcionEnVivo] = useState('');
@@ -135,8 +133,8 @@ export function useAsistenteVoz(currentUser) {
         CU23_AsistenteVozModel.obtenerEstadoMotor(),
         CU23_AsistenteVozModel.obtenerEjemplos(),
       ]);
-      setMotorInfo(estado);
-      setEjemplos(ej);
+      if (estado) setMotorInfo(estado);
+      if (ej) setEjemplos(ej);
     } catch (e) {
       console.error('Error al cargar datos iniciales de la IA:', e);
     }
@@ -275,18 +273,6 @@ export function useAsistenteVoz(currentUser) {
     }
   };
 
-  // Guardar configuración de Gemini
-  const handleGuardarGeminiConfig = async (apiKey, modelo) => {
-    try {
-      const res = await CU23_AsistenteVozModel.guardarConfiguracionGemini(apiKey, modelo);
-      setMotorInfo(res.estado);
-      setModalConfigOpen(false);
-      alert('¡Configuración de Google Gemini API guardada con éxito en el backend!');
-    } catch (e) {
-      alert(`Error al guardar configuración: ${e.message}`);
-    }
-  };
-
   // Cargar historial
   const handleAbrirHistorial = async () => {
     try {
@@ -311,8 +297,6 @@ export function useAsistenteVoz(currentUser) {
     ejemplos,
     ticketConfirmado,
     setTicketConfirmado,
-    modalConfigOpen,
-    setModalConfigOpen,
     modalHistorialOpen,
     setModalHistorialOpen,
     historialList,
@@ -323,10 +307,8 @@ export function useAsistenteVoz(currentUser) {
     handleConfirmarCupo,
     reproducirAudio,
     detenerAudio,
-    handleGuardarGeminiConfig,
     handleAbrirHistorial,
   };
 }
 
 export default useAsistenteVoz;
-

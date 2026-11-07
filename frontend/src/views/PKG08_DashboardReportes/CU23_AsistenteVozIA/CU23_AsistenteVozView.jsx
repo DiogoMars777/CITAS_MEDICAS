@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Mic,
   MicOff,
@@ -11,15 +11,11 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  AlertTriangle,
-  Settings,
   History,
   X,
   Printer,
   ChevronRight,
-  ShieldCheck,
   Stethoscope,
-  Key,
 } from 'lucide-react';
 import { useAsistenteVoz } from '../../../controllers/PKG08_DashboardReportes/CU23_AsistenteVozIA/CU23_AsistenteVozController';
 
@@ -29,7 +25,6 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
     inputText,
     setInputText,
     isListening,
-    isSpeaking,
     isLoading,
     voiceEnabled,
     setVoiceEnabled,
@@ -37,8 +32,6 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
     ejemplos,
     ticketConfirmado,
     setTicketConfirmado,
-    modalConfigOpen,
-    setModalConfigOpen,
     modalHistorialOpen,
     setModalHistorialOpen,
     historialList,
@@ -49,22 +42,8 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
     handleConfirmarCupo,
     reproducirAudio,
     detenerAudio,
-    handleGuardarGeminiConfig,
     handleAbrirHistorial,
   } = useAsistenteVoz(currentUser);
-
-  // Estado local para el formulario de configuración Gemini
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [modeloInput, setModeloInput] = useState(motorInfo.modelo || 'gemini-2.5-flash');
-
-  const onSubmitConfig = (e) => {
-    e.preventDefault();
-    if (!apiKeyInput.trim()) {
-      alert('Por favor introduce tu clave de Google Gemini API.');
-      return;
-    }
-    handleGuardarGeminiConfig(apiKeyInput.trim(), modeloInput);
-  };
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -116,26 +95,27 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
 
         {/* Acciones y estado del motor */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          {/* Badge del Motor */}
+          {/* Badge del Motor Gemini Conectado */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.4rem 0.8rem',
+            gap: '0.45rem',
+            padding: '0.45rem 0.85rem',
             borderRadius: '8px',
-            background: motorInfo.usa_gemini_api ? '#f0fdf4' : '#f8fafc',
-            border: `1px solid ${motorInfo.usa_gemini_api ? '#bbf7d0' : '#e2e8f0'}`,
-            fontSize: '0.74rem',
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            fontSize: '0.75rem',
             fontWeight: 700,
-            color: motorInfo.usa_gemini_api ? '#15803d' : '#475569',
+            color: '#15803d',
           }}>
             <span style={{
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: motorInfo.usa_gemini_api ? '#22c55e' : '#0284c7',
+              background: '#22c55e',
+              boxShadow: '0 0 6px #22c55e',
             }} />
-            <span>{motorInfo.motor_nombre}</span>
+            <span>Google Gemini AI Conectada (gemini-3.5-flash)</span>
           </div>
 
           {/* Botón Alternar Voz */}
@@ -163,28 +143,6 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
           >
             {voiceEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
             <span>{voiceEnabled ? 'Voz Activa' : 'Voz Silenciada'}</span>
-          </button>
-
-          {/* Botón Configurar Gemini */}
-          <button
-            type="button"
-            onClick={() => setModalConfigOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.45rem 0.85rem',
-              borderRadius: '8px',
-              border: '1px solid #c7d2fe',
-              background: '#eef2ff',
-              color: '#4338ca',
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            <Key size={14} />
-            <span>Configurar Gemini API</span>
           </button>
 
           {/* Botón Historial */}
@@ -585,7 +543,7 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
                     borderTopColor: 'transparent',
                     animation: 'spin 0.8s linear infinite',
                   }} />
-                  <span>Dra. Sofía (Gemini AI) está analizando tus síntomas y consultando turnos médicos...</span>
+                  <span>Dra. Sofía (Google Gemini AI) está analizando tus síntomas y consultando turnos médicos...</span>
                 </div>
               </div>
             )}
@@ -874,168 +832,7 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
         </div>
       )}
 
-      {/* 4. MODAL DE CONFIGURACIÓN DE GOOGLE GEMINI API */}
-      {modalConfigOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1rem',
-        }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            maxWidth: '540px',
-            width: '100%',
-            overflow: 'hidden',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-            border: '1px solid #e2e8f0',
-          }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)',
-              padding: '1.25rem 1.5rem',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <Key size={22} />
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>Configuración de Google Gemini API</h3>
-                  <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>Motor de Inteligencia Artificial para el Asistente por Voz</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalConfigOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={onSubmitConfig} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '0.75rem',
-                fontSize: '0.76rem',
-                color: '#475569',
-                lineHeight: 1.45,
-              }}>
-                ℹ️ <strong>Clave de Google Gemini:</strong> Puedes generar tu API Key gratuita en{' '}
-                <a
-                  href="https://aistudio.google.com/app/apikey"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: '#4338ca', fontWeight: 700 }}
-                >
-                  Google AI Studio (aistudio.google.com)
-                </a>.
-                Se guardará en el archivo de entorno seguro del servidor.
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
-                  Gemini API Key:
-                </label>
-                <input
-                  type="password"
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  placeholder="Ej: AIzaSyD..."
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 0.85rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.85rem',
-                    fontFamily: 'monospace',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                  }}
-                />
-                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
-                  Clave actual: <strong>{motorInfo.key_enmascarada}</strong>
-                </span>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
-                  Modelo de Gemini:
-                </label>
-                <select
-                  value={modeloInput}
-                  onChange={(e) => setModeloInput(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 0.85rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    background: '#ffffff',
-                  }}
-                >
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recomendado • Alta velocidad y precisión clínica)</option>
-                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Ultrarrápido y ligero)</option>
-                  <option value="gemini-3.8-flash">Gemini 3.8 Flash (Modelo multimodal de última generación)</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setModalConfigOpen(false)}
-                  style={{
-                    flex: 1,
-                    padding: '0.65rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    color: '#475569',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 1,
-                    padding: '0.65rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)',
-                    color: '#ffffff',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Guardar Configuración
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 5. MODAL DE HISTORIAL DE CONSULTAS IA */}
+      {/* 4. MODAL DE HISTORIAL DE CONSULTAS IA */}
       {modalHistorialOpen && (
         <div style={{
           position: 'fixed',
@@ -1147,4 +944,3 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
 };
 
 export default CU23_AsistenteVozView;
-
