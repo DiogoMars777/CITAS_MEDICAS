@@ -1157,7 +1157,7 @@ Generate-Diagram `
 # ==============================================================================
 Generate-Diagram `
     -cuCode "CU22" `
-    -title "Gestión de copias de seguridad y restauración de base de datos" `
+    -title "Gestión de copias de seguridad manuales y programación automática" `
     -actorName "Administrador del Sistema" `
     -uiClass @{
         Name = "UI_BackupRestore"
@@ -1166,6 +1166,8 @@ Generate-Diagram `
         Methods = @(
             "+ consultarHistorialBackups(): void",
             "+ solicitarGeneracionBackup(): void",
+            "+ configurarProgramacionCron(): void",
+            "+ ejecutarJobProgramado(): void",
             "+ descargarArchivoSQL(): void",
             "+ solicitarRestauracionBD(): void",
             "+ eliminarBackup(): void"
@@ -1175,11 +1177,13 @@ Generate-Diagram `
         Name = "CU22_BackupRestoreController"
         X = 540; Y = 430; W = 250
         Attributes = @(
-            "- formatearBytes(bytes): string"
+            "- backupService: CU22_BackupService"
         )
         Methods = @(
             "+ index(Request): JsonResponse",
-            "+ estadoSistema(): JsonResponse",
+            "+ configuracion(): JsonResponse",
+            "+ actualizarConfiguracion(Request): JsonResponse",
+            "+ ejecutarProgramado(Request): JsonResponse",
             "+ generar(Request): JsonResponse",
             "+ descargar(id): BinaryFileResponse",
             "+ restaurar(Request, id): JsonResponse",
@@ -1189,11 +1193,12 @@ Generate-Diagram `
     -entities @(
         @{
             Name = "BackupLog"
-            X = 920; Y = 280; W = 240
+            X = 920; Y = 240; W = 240
             Attributes = @(
                 "- id_backup: bigint",
                 "- nombre_archivo: string",
                 "- tipo_backup: string",
+                "- tipo_disparo: string",
                 "- tamano_bytes: bigint",
                 "- estado: string",
                 "- checksum_sha256: string",
@@ -1207,8 +1212,25 @@ Generate-Diagram `
             )
         },
         @{
+            Name = "BackupConfiguracion"
+            X = 1200; Y = 240; W = 240
+            Attributes = @(
+                "- id_configuracion: bigint",
+                "- habilitado: boolean",
+                "- frecuencia: string",
+                "- hora_ejecucion: string",
+                "- retencion_dias: int",
+                "- limite_archivos: int",
+                "- proximo_respaldo_at: timestamp"
+            )
+            Methods = @(
+                "+ first(): Model",
+                "+ calcularProximoRespaldo(): Carbon"
+            )
+        },
+        @{
             Name = "BitacoraAuditoria"
-            X = 1200; Y = 280; W = 240
+            X = 920; Y = 590; W = 240
             Attributes = @(
                 "- id_bitacora: bigint",
                 "- modulo: string",
@@ -1223,7 +1245,7 @@ Generate-Diagram `
         },
         @{
             Name = "Usuario"
-            X = 920; Y = 590; W = 240
+            X = 1200; Y = 590; W = 240
             Attributes = @(
                 "- id_usuario: bigint",
                 "- username: string",
@@ -1237,7 +1259,8 @@ Generate-Diagram `
     ) `
     -connections @(
         @{ From = "Ctrl"; To = "BackupLog"; Type = "Horizontal"; Dashed = $true },
-        @{ From = "Ctrl"; To = "BitacoraAuditoria"; Type = "RightToTop"; Dashed = $true },
+        @{ From = "Ctrl"; To = "BackupConfiguracion"; Type = "RightToTop"; Dashed = $true },
+        @{ From = "Ctrl"; To = "BitacoraAuditoria"; Type = "RightToBottom"; Dashed = $true },
         @{ From = "Ctrl"; To = "Usuario"; Type = "Horizontal"; Dashed = $true }
     )
 

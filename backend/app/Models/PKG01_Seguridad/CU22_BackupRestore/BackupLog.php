@@ -16,6 +16,7 @@ class BackupLog extends Model
     protected $fillable = [
         'nombre_archivo',
         'tipo_backup',
+        'tipo_disparo',
         'tamano_bytes',
         'tamano_formateado',
         'estado',

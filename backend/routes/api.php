@@ -250,6 +250,9 @@ Route::prefix('reportes')->group(function () {
 Route::prefix('backups')->group(function () {
     Route::get('/', [CU22_BackupRestoreController::class, 'index']);
     Route::get('/estado-sistema', [CU22_BackupRestoreController::class, 'estadoSistema']);
+    Route::get('/configuracion', [CU22_BackupRestoreController::class, 'configuracion']);
+    Route::put('/configuracion', [CU22_BackupRestoreController::class, 'actualizarConfiguracion']);
+    Route::post('/ejecutar-programado', [CU22_BackupRestoreController::class, 'ejecutarProgramado']);
     Route::post('/generar', [CU22_BackupRestoreController::class, 'generar']);
     Route::get('/{id}/descargar', [CU22_BackupRestoreController::class, 'descargar']);
     Route::post('/{id}/restaurar', [CU22_BackupRestoreController::class, 'restaurar']);

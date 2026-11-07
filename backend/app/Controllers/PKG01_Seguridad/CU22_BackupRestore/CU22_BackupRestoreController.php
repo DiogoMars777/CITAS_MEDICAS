@@ -10,28 +10,19 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
 use App\Models\PKG01_Seguridad\CU22_BackupRestore\BackupLog;
+use App\Models\PKG01_Seguridad\CU22_BackupRestore\BackupConfiguracion;
 use App\Models\PKG01_Seguridad\CU02_BitacoraAuditoria\BitacoraAuditoria;
+use App\Services\PKG01_Seguridad\CU22_BackupService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class CU22_BackupRestoreController extends Controller
 {
-    /**
-     * Formatear bytes a unidad legible (KB, MB, GB)
-     */
-    private function formatearBytes(int $bytes): string
-    {
-        if ($bytes >= 1073741824) {
-            return round($bytes / 1073741824, 2) . ' GB';
-        } elseif ($bytes >= 1048576) {
-            return round($bytes / 1048576, 2) . ' MB';
-        } elseif ($bytes >= 1024) {
-            return round($bytes / 1024, 2) . ' KB';
-        }
-        return $bytes . ' B';
-    }
+    public function __construct(
+        protected CU22_BackupService $backupService
+    ) {}
 
     /**
-     * CU22 - Listar copias de seguridad e indicadores
+     * CU22 - Listar copias de seguridad e indicadores ejecutivos
      */
     public function index(Request $request): JsonResponse
     {
@@ -42,17 +33,22 @@ class CU22_BackupRestoreController extends Controller
                 $query->where('tipo_backup', $request->tipo);
             }
 
+            if ($request->has('disparo') && $request->disparo !== 'TODOS') {
+                $query->where('tipo_disparo', $request->disparo);
+            }
+
             $backups = $query->get()->map(function ($b) {
                 return [
                     'id_backup'          => $b->id_backup,
                     'nombre_archivo'     => $b->nombre_archivo,
                     'tipo_backup'        => $b->tipo_backup,
+                    'tipo_disparo'       => $b->tipo_disparo ?? 'MANUAL',
                     'tamano_bytes'       => $b->tamano_bytes,
                     'tamano_formateado'  => $b->tamano_formateado,
                     'estado'             => $b->estado,
                     'checksum_sha256'    => $b->checksum_sha256,
                     'detalles'           => $b->detalles,
-                    'creado_por_nombre'  => $b->creador ? $b->creador->username : 'admin',
+                    'creado_por_nombre'  => $b->creador ? $b->creador->username : ($b->tipo_disparo === 'PROGRAMADO' ? 'Sistema (Cron)' : 'Admin'),
                     'fecha_creacion'     => $b->fecha_creacion ? $b->fecha_creacion->format('Y-m-d H:i:s') : null,
                     'fecha_restauracion' => $b->fecha_restauracion ? $b->fecha_restauracion->format('Y-m-d H:i:s') : null,
                     'restaurado_por_nom' => $b->restaurador ? $b->restaurador->username : null,
@@ -63,15 +59,21 @@ class CU22_BackupRestoreController extends Controller
             $ultimo = BackupLog::orderByDesc('fecha_creacion')->first();
             $ultimoRestaurado = BackupLog::whereNotNull('fecha_restauracion')->orderByDesc('fecha_restauracion')->first();
 
+            $config = BackupConfiguracion::first();
+
             return response()->json([
                 'status' => 'success',
                 'data'   => [
                     'kpis' => [
-                        'total_backups'      => $backups->count(),
-                        'espacio_ocupado'    => $this->formatearBytes($totalBytes),
-                        'ultimo_backup'      => $ultimo ? $ultimo->fecha_creacion->format('Y-m-d H:i:s') : 'Sin registros',
-                        'ultimo_restaurado'  => $ultimoRestaurado ? $ultimoRestaurado->fecha_restauracion->format('Y-m-d H:i:s') : 'Ninguno',
-                        'estado_salud'       => $ultimo && Carbon::now()->diffInDays($ultimo->fecha_creacion) < 3 ? 'OPTIMO' : 'REQUERIDO',
+                        'total_backups'        => $backups->count(),
+                        'total_manuales'       => $backups->where('tipo_disparo', 'MANUAL')->count(),
+                        'total_programados'    => $backups->where('tipo_disparo', 'PROGRAMADO')->count(),
+                        'espacio_ocupado'      => $this->backupService->formatearBytes($totalBytes),
+                        'ultimo_backup'        => $ultimo ? $ultimo->fecha_creacion->format('Y-m-d H:i:s') : 'Sin registros',
+                        'ultimo_restaurado'    => $ultimoRestaurado ? $ultimoRestaurado->fecha_restauracion->format('Y-m-d H:i:s') : 'Ninguno',
+                        'programacion_activa'  => $config ? $config->habilitado : false,
+                        'proximo_programado'   => $config && $config->proximo_respaldo_at ? $config->proximo_respaldo_at->format('Y-m-d H:i:s') : 'No programado',
+                        'estado_salud'         => $ultimo && Carbon::now()->diffInDays($ultimo->fecha_creacion) < 3 ? 'OPTIMO' : 'REQUERIDO',
                     ],
                     'backups' => $backups,
                 ],
@@ -83,148 +85,112 @@ class CU22_BackupRestoreController extends Controller
     }
 
     /**
-     * CU22 - Estado del motor de Base de Datos
+     * CU22 - Obtener configuración actual de programación automática
      */
-    public function estadoSistema(): JsonResponse
+    public function configuracion(): JsonResponse
     {
         try {
-            $driver = DB::connection()->getDriverName();
-            $dbName = DB::connection()->getDatabaseName();
+            $config = BackupConfiguracion::with('actualizadoPor')->first();
 
-            $totalTablas = 0;
-            $version = 'Desconocido';
-
-            if ($driver === 'pgsql') {
-                $verQuery = DB::select("SELECT version() as ver");
-                $version = $verQuery[0]->ver ?? 'PostgreSQL';
-                $tablesQuery = DB::select("SELECT count(*) as total FROM information_schema.tables WHERE table_schema = 'public'");
-                $totalTablas = (int)($tablesQuery[0]->total ?? 22);
-            } else {
-                $totalTablas = 22;
-                $version = 'SQLite 3.x / Local Dev';
+            if (!$config) {
+                // Crear configuración por defecto si aún no existe
+                $manana = Carbon::now('America/La_Paz')->addDay()->setTime(2, 0, 0);
+                $config = BackupConfiguracion::create([
+                    'habilitado'              => true,
+                    'frecuencia'              => 'DIARIO',
+                    'dia_semana'              => 1,
+                    'dia_mes'                 => 1,
+                    'hora_ejecucion'          => '02:00',
+                    'tipo_backup'             => 'COMPLETO',
+                    'retencion_dias'          => 30,
+                    'limite_archivos'         => 10,
+                    'email_notificacion'      => 'admin@clinicavidasalud.com',
+                    'proximo_respaldo_at'     => $manana,
+                    'estado_ultimo_respaldo'  => 'NINGUNO',
+                    'mensaje_ultimo_respaldo' => 'Configuración inicial por defecto.',
+                    'actualizado_por'         => auth()->id() ?? 1,
+                    'fecha_creacion'          => Carbon::now('America/La_Paz'),
+                    'fecha_actualizacion'     => Carbon::now('America/La_Paz'),
+                ]);
             }
 
             return response()->json([
                 'status' => 'success',
                 'data'   => [
-                    'motor'             => strtoupper($driver),
-                    'version'           => $version,
-                    'base_datos'        => $dbName,
-                    'total_tablas'      => $totalTablas,
-                    'host'              => config('database.connections.' . $driver . '.host', '127.0.0.1'),
-                    'puerto'            => config('database.connections.' . $driver . '.port', 5432),
-                    'conexion_activa'   => true,
-                    'fecha_hora_serv'   => Carbon::now('America/La_Paz')->format('Y-m-d H:i:s'),
+                    'id_configuracion'        => $config->id_configuracion,
+                    'habilitado'              => (bool)$config->habilitado,
+                    'frecuencia'              => $config->frecuencia,
+                    'dia_semana'              => (int)$config->dia_semana,
+                    'dia_mes'                 => (int)$config->dia_mes,
+                    'hora_ejecucion'          => $config->hora_ejecucion,
+                    'tipo_backup'             => $config->tipo_backup,
+                    'retencion_dias'          => (int)$config->retencion_dias,
+                    'limite_archivos'         => (int)$config->limite_archivos,
+                    'email_notificacion'      => $config->email_notificacion,
+                    'ultimo_respaldo_at'      => $config->ultimo_respaldo_at ? $config->ultimo_respaldo_at->format('Y-m-d H:i:s') : null,
+                    'proximo_respaldo_at'     => $config->proximo_respaldo_at ? $config->proximo_respaldo_at->format('Y-m-d H:i:s') : null,
+                    'estado_ultimo_respaldo'  => $config->estado_ultimo_respaldo,
+                    'mensaje_ultimo_respaldo' => $config->mensaje_ultimo_respaldo,
+                    'actualizado_por_nom'     => $config->actualizadoPor ? $config->actualizadoPor->username : 'Admin',
+                    'hora_servidor_bolivia'   => Carbon::now('America/La_Paz')->format('Y-m-d H:i:s'),
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::error("Error en CU22 estadoSistema: " . $e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'Error al consultar estado de la base de datos.'], 500);
+            Log::error("Error en CU22 configuracion: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Error al obtener configuración de programación.'], 500);
         }
     }
 
     /**
-     * CU22 - Generar nuevo Backup SQL
+     * CU22 - Actualizar programación de respaldos automáticos
      */
-    public function generar(Request $request): JsonResponse
+    public function actualizarConfiguracion(Request $request): JsonResponse
     {
         try {
-            $tipo = $request->input('tipo', 'COMPLETO'); // COMPLETO, SOLO_DATOS, SOLO_ESTRUCTURA
+            $validated = $request->validate([
+                'habilitado'         => 'required|boolean',
+                'frecuencia'         => 'required|in:DIARIO,SEMANAL,MENSUAL',
+                'dia_semana'         => 'nullable|integer|between:1,7',
+                'dia_mes'            => 'nullable|integer|between:1,31',
+                'hora_ejecucion'     => 'required|string|regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/',
+                'tipo_backup'        => 'required|in:COMPLETO,SOLO_DATOS,SOLO_ESTRUCTURA',
+                'retencion_dias'     => 'required|integer|min:0|max:365',
+                'limite_archivos'    => 'required|integer|min:1|max:100',
+                'email_notificacion' => 'nullable|email|max:150',
+            ]);
+
+            $config = BackupConfiguracion::first();
+            if (!$config) {
+                $config = new BackupConfiguracion();
+                $config->fecha_creacion = Carbon::now('America/La_Paz');
+            }
+
             $idUsuario = auth()->id() ?? 1;
 
-            $backupDir = storage_path('app/backups');
-            if (!File::isDirectory($backupDir)) {
-                File::makeDirectory($backupDir, 0755, true, true);
-            }
+            $config->fill($validated);
+            $config->actualizado_por = $idUsuario;
+            $config->fecha_actualizacion = Carbon::now('America/La_Paz');
 
-            $timestamp = Carbon::now('America/La_Paz')->format('Ymd_His');
-            $slugTipo = strtolower($tipo);
-            $nombreArchivo = "clinica_vidasalud_{$slugTipo}_{$timestamp}.sql";
-            $rutaArchivo = $backupDir . DIRECTORY_SEPARATOR . $nombreArchivo;
-
-            // Construir contenido estructurado del dump
-            $tablas = [
-                'roles', 'permisos', 'rol_permisos', 'usuarios', 'pacientes',
-                'contactos_emergencia', 'historias_clinicas', 'especialidades',
-                'medicos', 'medico_especialidades', 'turnos_medicos', 'bloqueos_agenda',
-                'citas', 'reservas', 'atenciones_medicas', 'historial_reprogramaciones',
-                'cancelaciones_citas', 'laboratorios_estudios', 'recordatorios', 'bitacora_auditoria'
-            ];
-
-            $sqlContent = "-- ==============================================================================\n";
-            $sqlContent .= "-- CLÍNICA VIDA SALUD - BACKUP AUTOMATIZADO DE BASE DE DATOS\n";
-            $sqlContent .= "-- Tipo: {$tipo}\n";
-            $sqlContent .= "-- Fecha de Generación: " . Carbon::now('America/La_Paz')->toIso8601String() . "\n";
-            $sqlContent .= "-- Motor: " . DB::connection()->getDriverName() . "\n";
-            $sqlContent .= "-- ==============================================================================\n\n";
-
-            $totalRegistrosDump = 0;
-            $resumenTablas = [];
-
-            foreach ($tablas as $tabla) {
-                try {
-                    $count = DB::table($tabla)->count();
-                    $totalRegistrosDump += $count;
-                    $resumenTablas[$tabla] = $count;
-
-                    $sqlContent .= "-- Tabla: {$tabla} ({$count} registros)\n";
-                    if ($tipo !== 'SOLO_ESTRUCTURA' && $count > 0) {
-                        $filas = DB::table($tabla)->get();
-                        foreach ($filas as $fila) {
-                            $campos = array_keys((array)$fila);
-                            $valores = array_map(function ($val) {
-                                if (is_null($val)) return 'NULL';
-                                if (is_bool($val)) return $val ? 'TRUE' : 'FALSE';
-                                if (is_numeric($val)) return $val;
-                                return "'" . addslashes((string)$val) . "'";
-                            }, array_values((array)$fila));
-
-                            $sqlContent .= "INSERT INTO {$tabla} (" . implode(', ', $campos) . ") VALUES (" . implode(', ', $valores) . ") ON CONFLICT DO NOTHING;\n";
-                        }
-                    }
-                    $sqlContent .= "\n";
-                } catch (\Throwable $tbError) {
-                    // Si alguna tabla aún no existe, registrar advertencia
-                    $resumenTablas[$tabla] = 'omitida';
-                }
-            }
-
-            File::put($rutaArchivo, $sqlContent);
-
-            $tamanoBytes = File::size($rutaArchivo);
-            $tamanoFormateado = $this->formatearBytes($tamanoBytes);
-            $sha256 = hash_file('sha256', $rutaArchivo);
-
-            $backup = BackupLog::create([
-                'nombre_archivo'      => $nombreArchivo,
-                'tipo_backup'         => $tipo,
-                'tamano_bytes'        => $tamanoBytes,
-                'tamano_formateado'   => $tamanoFormateado,
-                'estado'              => 'COMPLETADO',
-                'checksum_sha256'     => $sha256,
-                'ruta_almacenamiento' => $rutaArchivo,
-                'detalles'            => [
-                    'tablas_respaldadas'  => count($resumenTablas),
-                    'total_registros'     => $totalRegistrosDump,
-                    'resumen_por_tabla'   => $resumenTablas,
-                    'duracion_segundos'   => 0.45,
-                ],
-                'creado_por'          => $idUsuario,
-                'fecha_creacion'      => Carbon::now('America/La_Paz'),
-            ]);
+            // Recalcular próximo respaldo según nueva periodicidad
+            $config->proximo_respaldo_at = $config->calcularProximoRespaldo(Carbon::now('America/La_Paz'));
+            $config->save();
 
             // Auditoría
             BitacoraAuditoria::create([
                 'id_usuario'           => $idUsuario,
                 'modulo'               => 'SEGURIDAD',
-                'tabla_afectada'       => 'backup_logs',
-                'id_registro_afectado' => $backup->id_backup,
-                'operacion'            => 'GENERACION_BACKUP',
+                'tabla_afectada'       => 'backup_configuraciones',
+                'id_registro_afectado' => $config->id_configuracion,
+                'operacion'            => 'ACTUALIZACION_CONFIGURACION_BACKUP',
                 'valores_nuevos'       => [
-                    'archivo'   => $nombreArchivo,
-                    'tipo'      => $tipo,
-                    'tamano'    => $tamanoFormateado,
-                    'checksum'  => $sha256,
+                    'habilitado'     => $config->habilitado,
+                    'frecuencia'     => $config->frecuencia,
+                    'hora'           => $config->hora_ejecucion,
+                    'dia_semana'     => $config->dia_semana,
+                    'dia_mes'        => $config->dia_mes,
+                    'tipo_backup'    => $config->tipo_backup,
+                    'retencion_dias' => $config->retencion_dias,
+                    'proximo'        => $config->proximo_respaldo_at ? $config->proximo_respaldo_at->toIso8601String() : null,
                 ],
                 'ip_address'           => $request->ip(),
                 'user_agent'           => $request->userAgent(),
@@ -233,7 +199,64 @@ class CU22_BackupRestoreController extends Controller
 
             return response()->json([
                 'status'  => 'success',
-                'message' => "Copia de seguridad '{$nombreArchivo}' generada exitosamente.",
+                'message' => 'Configuración de respaldos automáticos actualizada exitosamente.',
+                'data'    => [
+                    'config'     => $config,
+                    'proximo_at' => $config->proximo_respaldo_at ? $config->proximo_respaldo_at->format('Y-m-d H:i:s') : null,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("Error en CU22 actualizarConfiguracion: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Error al guardar la configuración: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * CU22 - Ejecutar tarea programada de inmediato (Simular Cron / Scheduler)
+     */
+    public function ejecutarProgramado(Request $request): JsonResponse
+    {
+        try {
+            $resultado = $this->backupService->ejecutarTareaProgramada(forzar: true);
+
+            if ($resultado['ejecutado']) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => 'Tarea programada ejecutada con éxito mediante el motor de respaldos.',
+                    'data'    => $resultado,
+                ]);
+            }
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => $resultado['error'] ?? $resultado['motivo'] ?? 'No se pudo ejecutar la tarea programada.',
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error("Error en CU22 ejecutarProgramado: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Error al disparar tarea programada: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * CU22 - Generar nuevo Backup SQL Manual
+     */
+    public function generar(Request $request): JsonResponse
+    {
+        try {
+            $tipo = $request->input('tipo', 'COMPLETO');
+            $idUsuario = auth()->id() ?? 1;
+
+            $backup = $this->backupService->generarBackup(
+                tipo: $tipo,
+                tipoDisparo: 'MANUAL',
+                idUsuario: $idUsuario,
+                ip: $request->ip(),
+                userAgent: $request->userAgent()
+            );
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => "Copia de seguridad manual '{$backup->nombre_archivo}' generada exitosamente.",
                 'data'    => $backup,
             ], 201);
         } catch (\Throwable $e) {
@@ -255,7 +278,6 @@ class CU22_BackupRestoreController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'El archivo físico del backup no fue encontrado en el servidor.'], 404);
             }
 
-            // Auditoría
             BitacoraAuditoria::create([
                 'id_usuario'           => auth()->id() ?? 1,
                 'modulo'               => 'SEGURIDAD',
@@ -344,7 +366,6 @@ class CU22_BackupRestoreController extends Controller
                 File::delete($backup->ruta_almacenamiento);
             }
 
-            // Auditoría
             BitacoraAuditoria::create([
                 'id_usuario'           => auth()->id() ?? 1,
                 'modulo'               => 'SEGURIDAD',
@@ -364,6 +385,47 @@ class CU22_BackupRestoreController extends Controller
         } catch (\Throwable $e) {
             Log::error("Error en CU22 destroy: " . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => 'Error al eliminar backup.'], 500);
+        }
+    }
+
+    /**
+     * CU22 - Estado del motor de Base de Datos
+     */
+    public function estadoSistema(): JsonResponse
+    {
+        try {
+            $driver = DB::connection()->getDriverName();
+            $dbName = DB::connection()->getDatabaseName();
+
+            $totalTablas = 0;
+            $version = 'Desconocido';
+
+            if ($driver === 'pgsql') {
+                $verQuery = DB::select("SELECT version() as ver");
+                $version = $verQuery[0]->ver ?? 'PostgreSQL';
+                $tablesQuery = DB::select("SELECT count(*) as total FROM information_schema.tables WHERE table_schema = 'public'");
+                $totalTablas = (int)($tablesQuery[0]->total ?? 23);
+            } else {
+                $totalTablas = 23;
+                $version = 'SQLite 3.x / Local Dev';
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data'   => [
+                    'motor'             => strtoupper($driver),
+                    'version'           => $version,
+                    'base_datos'        => $dbName,
+                    'total_tablas'      => $totalTablas,
+                    'host'              => config('database.connections.' . $driver . '.host', '127.0.0.1'),
+                    'puerto'            => config('database.connections.' . $driver . '.port', 5432),
+                    'conexion_activa'   => true,
+                    'fecha_hora_serv'   => Carbon::now('America/La_Paz')->format('Y-m-d H:i:s'),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("Error en CU22 estadoSistema: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Error al consultar estado de la base de datos.'], 500);
         }
     }
 }

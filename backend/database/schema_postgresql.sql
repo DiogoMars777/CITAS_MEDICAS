@@ -358,13 +358,14 @@ CREATE TABLE backup_logs (
     id_backup BIGSERIAL PRIMARY KEY,
     nombre_archivo VARCHAR(150) NOT NULL UNIQUE,
     tipo_backup VARCHAR(30) NOT NULL DEFAULT 'COMPLETO' CHECK (tipo_backup IN ('COMPLETO', 'SOLO_DATOS', 'SOLO_ESTRUCTURA')),
+    tipo_disparo VARCHAR(20) NOT NULL DEFAULT 'MANUAL' CHECK (tipo_disparo IN ('MANUAL', 'PROGRAMADO')),
     tamano_bytes BIGINT NOT NULL DEFAULT 0,
     tamano_formateado VARCHAR(20) NOT NULL DEFAULT '0 KB',
     estado VARCHAR(20) NOT NULL DEFAULT 'COMPLETADO' CHECK (estado IN ('COMPLETADO', 'EN_PROCESO', 'FALLIDO', 'RESTAURADO')),
     checksum_sha256 VARCHAR(64),
     ruta_almacenamiento VARCHAR(255),
     detalles JSONB,
-    creado_por BIGINT NOT NULL,
+    creado_por BIGINT,
     fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_restauracion TIMESTAMP WITH TIME ZONE,
     restaurado_por BIGINT,
@@ -372,6 +373,28 @@ CREATE TABLE backup_logs (
     CONSTRAINT fk_backups_restaurador FOREIGN KEY (restaurado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
 );
 CREATE INDEX idx_backups_fecha ON backup_logs(fecha_creacion);
+
+-- Tabla de Configuración de Programación Automática (Cron / Scheduler)
+CREATE TABLE backup_configuraciones (
+    id_configuracion BIGSERIAL PRIMARY KEY,
+    habilitado BOOLEAN NOT NULL DEFAULT TRUE,
+    frecuencia VARCHAR(20) NOT NULL DEFAULT 'DIARIO' CHECK (frecuencia IN ('DIARIO', 'SEMANAL', 'MENSUAL')),
+    dia_semana SMALLINT DEFAULT 1 CHECK (dia_semana BETWEEN 1 AND 7), -- 1: Lunes, 7: Domingo
+    dia_mes SMALLINT DEFAULT 1 CHECK (dia_mes BETWEEN 1 AND 31),      -- Día 1 al 31 del mes
+    hora_ejecucion VARCHAR(8) NOT NULL DEFAULT '02:00',               -- 02:00 AM (Zona Bolivia America/La_Paz)
+    tipo_backup VARCHAR(30) NOT NULL DEFAULT 'COMPLETO' CHECK (tipo_backup IN ('COMPLETO', 'SOLO_DATOS', 'SOLO_ESTRUCTURA')),
+    retencion_dias INTEGER NOT NULL DEFAULT 30,                       -- 0: ilimitado, o 7, 15, 30, 60 días
+    limite_archivos INTEGER NOT NULL DEFAULT 10,                      -- Máx respaldos en disco antes de purga automática
+    email_notificacion VARCHAR(150) DEFAULT 'admin@clinicavidasalud.com',
+    ultimo_respaldo_at TIMESTAMP WITH TIME ZONE,
+    proximo_respaldo_at TIMESTAMP WITH TIME ZONE,
+    estado_ultimo_respaldo VARCHAR(30) DEFAULT 'NINGUNO' CHECK (estado_ultimo_respaldo IN ('NINGUNO', 'EXITOSO', 'FALLIDO')),
+    mensaje_ultimo_respaldo TEXT,
+    actualizado_por BIGINT,
+    fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_backup_config_usuario FOREIGN KEY (actualizado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
+);
 
 -- ==============================================================================
 -- 7. DATOS SEMILLA (ROLES, USUARIOS, ESPECIALIDADES Y PERMISOS)
@@ -556,3 +579,4 @@ SELECT setval(pg_get_serial_sequence('citas', 'id_cita'), COALESCE((SELECT MAX(i
 SELECT setval(pg_get_serial_sequence('atenciones_medicas', 'id_atencion'), COALESCE((SELECT MAX(id_atencion) FROM atenciones_medicas), 1));
 SELECT setval(pg_get_serial_sequence('laboratorios_estudios', 'id_estudio'), COALESCE((SELECT MAX(id_estudio) FROM laboratorios_estudios), 1));
 SELECT setval(pg_get_serial_sequence('backup_logs', 'id_backup'), COALESCE((SELECT MAX(id_backup) FROM backup_logs), 1));
+SELECT setval(pg_get_serial_sequence('backup_configuraciones', 'id_configuracion'), COALESCE((SELECT MAX(id_configuracion) FROM backup_configuraciones), 1));
