@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
-import { X, Printer, CheckCircle2, Calendar, Clock, User, Stethoscope, MapPin, ShieldCheck, QrCode } from 'lucide-react';
+import { X, Printer, CheckCircle2, Calendar, Clock, User, Stethoscope, MapPin, ShieldCheck, QrCode, CreditCard } from 'lucide-react';
 
 export const ModalFichaCita = ({
   isOpen,
   onClose,
   cita,
+  onPagar,
 }) => {
   const printAreaRef = useRef(null);
 
@@ -259,6 +260,33 @@ export const ModalFichaCita = ({
               <Printer size={15} />
               <span>Imprimir Ficha</span>
             </button>
+
+            {onPagar && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onPagar(cita);
+                }}
+                style={{
+                  padding: '0.55rem 1.15rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)',
+                }}
+              >
+                <CreditCard size={15} />
+                <span>Pagar / Cobrar Cita</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

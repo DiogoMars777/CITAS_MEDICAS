@@ -30,6 +30,7 @@ import CU10_ReservarCitaView from '../PKG05_GestionCitasConcurrencia/CU10_Reserv
 import CU11_ReprogramarCitaView from '../PKG05_GestionCitasConcurrencia/CU11_ReprogramarCita/CU11_ReprogramarCitaView';
 import CU12_CancelarCitaView from '../PKG05_GestionCitasConcurrencia/CU12_CancelarCita/CU12_CancelarCitaView';
 import CU13_AsistenciaView from '../PKG05_GestionCitasConcurrencia/CU13_ControlAsistencia/CU13_AsistenciaView';
+import CU23_GestionarPagosView from '../PKG05_GestionCitasConcurrencia/CU23_GestionarPagos/CU23_GestionarPagosView';
 import CU14_AntecedentesView from '../PKG03_PacientesHistorial/CU14_AntecedentesClinicos/CU14_AntecedentesView';
 import CU15_AgendaMedicoView from '../PKG06_AtencionMedica/CU15_AgendaDiariaMedico/CU15_AgendaMedicoView';
 import CU16_ConsultaMedicaView from '../PKG06_AtencionMedica/CU16_AtenderConsulta/CU16_ConsultaMedicaView';
@@ -569,6 +570,8 @@ export const MainLayout = ({ currentUser, onLogout }) => {
 
               {activeCUId === 'CU13' && <CU13_AsistenciaView />}
 
+              {activeCUId === 'CU23' && <CU23_GestionarPagosView currentUser={currentUser} />}
+
               {activeCUId === 'CU12' && <CU12_CancelarCitaView />}
 
               {activeCUId === 'CU11' && <CU11_ReprogramarCitaView />}
@@ -601,7 +604,7 @@ export const MainLayout = ({ currentUser, onLogout }) => {
                 />
               )}
 
-          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21', 'CU22', 'CU24'].includes(activeCUId) && (
+          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21', 'CU22', 'CU23', 'CU24'].includes(activeCUId) && (
             <SeniorCUPlaceholder
               cu={activeCUInfo.cu}
               pkg={activeCUInfo.pkg}

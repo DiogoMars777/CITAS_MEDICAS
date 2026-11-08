@@ -252,6 +252,33 @@ CREATE TABLE reservas (
     CONSTRAINT fk_reservas_paciente FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE
 );
 
+CREATE TABLE pagos (
+    id_pago BIGSERIAL PRIMARY KEY,
+    codigo_pago VARCHAR(30) NOT NULL UNIQUE,
+    id_cita BIGINT NOT NULL,
+    id_paciente BIGINT NOT NULL,
+    monto NUMERIC(10, 2) NOT NULL,
+    moneda VARCHAR(10) NOT NULL DEFAULT 'BOB',
+    metodo_pago VARCHAR(30) NOT NULL CHECK (metodo_pago IN ('EFECTIVO', 'QR', 'TRANSFERENCIA', 'TARJETA', 'PAYPAL')),
+    estado_pago VARCHAR(20) NOT NULL DEFAULT 'COMPLETADO' CHECK (estado_pago IN ('PENDIENTE', 'COMPLETADO', 'NO_REEMBOLSABLE', 'ANULADO')),
+    canal_pago VARCHAR(20) NOT NULL DEFAULT 'RECEPCION' CHECK (canal_pago IN ('RECEPCION', 'EN_LINEA_PACIENTE', 'IA_ASISTENTE')),
+    numero_comprobante VARCHAR(50) NOT NULL UNIQUE,
+    referencia_transaccion VARCHAR(120),
+    detalles_pago JSONB,
+    politica_reembolso VARCHAR(255) NOT NULL DEFAULT 'No se aceptan devoluciones monetarias. Cita sujeta a reprogramación.',
+    id_usuario_cajero BIGINT,
+    fecha_pago TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_pagos_cita FOREIGN KEY (id_cita) REFERENCES citas(id_cita) ON DELETE RESTRICT,
+    CONSTRAINT fk_pagos_paciente FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE RESTRICT,
+    CONSTRAINT fk_pagos_cajero FOREIGN KEY (id_usuario_cajero) REFERENCES usuarios(id_usuario) ON DELETE RESTRICT
+);
+CREATE INDEX idx_pagos_cita ON pagos(id_cita);
+CREATE INDEX idx_pagos_paciente ON pagos(id_paciente);
+CREATE INDEX idx_pagos_fecha ON pagos(fecha_pago);
+CREATE INDEX idx_pagos_estado ON pagos(estado_pago);
+
 CREATE TABLE atenciones_medicas (
     id_atencion BIGSERIAL PRIMARY KEY,
     id_cita BIGINT NOT NULL UNIQUE,

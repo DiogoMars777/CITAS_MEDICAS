@@ -223,6 +223,27 @@ export const ModalReprogramarCita = ({
               </div>
             )}
 
+            {/* INDICADOR DE PAGO TRANSFERIBLE */}
+            <div
+              style={{
+                padding: '0.65rem 0.85rem',
+                borderRadius: '8px',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                color: '#166534',
+                fontSize: '0.74rem',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+              }}
+            >
+              <CheckCircle2 size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+              <span>
+                <strong>Pago Válido y Transferible:</strong> Al contar con pago registrado, este se mantiene automáticamente activo y transferido para la nueva fecha y horario que elijas sin cobro adicional.
+              </span>
+            </div>
+
             {/* RESUMEN ACTUAL VS NUEVO */}
             <div
               style={{

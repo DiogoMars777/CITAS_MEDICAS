@@ -172,11 +172,31 @@ export const ModalCancelarCita = ({ isOpen, onClose, onConfirm, cita, loading = 
               border: '1px solid #bfdbfe',
               color: '#1d4ed8',
               fontSize: '0.76rem',
-              marginBottom: '1rem',
+              marginBottom: '0.75rem',
               lineHeight: 1.4,
             }}
           >
             ℹ️ Al confirmar la cancelación, este cupo quedará <strong>DISPONIBLE</strong> inmediatamente en la agenda médica para que otros pacientes puedan reservarlo.
+          </div>
+
+          {/* POLÍTICA ESTRICTA DE NO DEVOLUCIONES */}
+          <div
+            style={{
+              padding: '0.75rem 0.85rem',
+              borderRadius: '8px',
+              background: '#fffbeb',
+              border: '1px solid #fde68a',
+              color: '#92400e',
+              fontSize: '0.75rem',
+              marginBottom: '1rem',
+              lineHeight: 1.4,
+            }}
+          >
+            <div style={{ fontWeight: 800, color: '#b45309', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <AlertTriangle size={14} />
+              <span>Política Clínica Vida Salud: No se admiten devoluciones monetarias</span>
+            </div>
+            De acuerdo al reglamento institucional, los pagos realizados por consultas médicas <strong>no son reembolsables</strong> si se cancela la cita. Le recomendamos <strong>reprogramar la cita médica</strong> a otra fecha para conservar su pago y cupo.
           </div>
 
           {/* MOTIVO DE CANCELACIÓN */}

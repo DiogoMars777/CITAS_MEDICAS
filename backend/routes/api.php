@@ -14,6 +14,7 @@ use App\Controllers\PKG05_GestionCitasConcurrencia\CU10_ReservarCita\CU10_Reserv
 use App\Controllers\PKG05_GestionCitasConcurrencia\CU11_ReprogramarCita\CU11_ReprogramacionController;
 use App\Controllers\PKG05_GestionCitasConcurrencia\CU12_CancelarCita\CU12_CancelacionController;
 use App\Controllers\PKG05_GestionCitasConcurrencia\CU13_ControlAsistencia\CU13_AsistenciaController;
+use App\Controllers\PKG05_GestionCitasConcurrencia\CU23_GestionarPagos\CU23_GestionarPagosController;
 use App\Controllers\PKG03_PacientesHistorial\CU14_AntecedentesClinicos\CU14_AntecedentesClinicosController;
 use App\Controllers\PKG06_AtencionMedica\CU15_AgendaDiariaMedico\CU15_AgendaMedicoController;
 use App\Controllers\PKG06_AtencionMedica\CU16_AtenderConsulta\CU16_AtencionMedicaController;
@@ -171,6 +172,20 @@ Route::prefix('citas')->group(function () {
 Route::prefix('asistencia')->group(function () {
     Route::get('/', [CU13_AsistenciaController::class, 'index']);
     Route::patch('/{id}', [CU13_AsistenciaController::class, 'registrarAsistencia']);
+});
+
+// ==========================================
+// CU23: Gestionar Pagos y Cobranza de Citas Médicas
+// ==========================================
+Route::prefix('pagos')->group(function () {
+    Route::get('/', [CU23_GestionarPagosController::class, 'index']);
+    Route::get('/pendientes', [CU23_GestionarPagosController::class, 'pendientes']);
+    Route::get('/resumen-caja', [CU23_GestionarPagosController::class, 'resumenCaja']);
+    Route::get('/cita/{idCita}', [CU23_GestionarPagosController::class, 'estadoPagoCita']);
+    Route::post('/', [CU23_GestionarPagosController::class, 'registrarPago']);
+    Route::post('/simular-qr', [CU23_GestionarPagosController::class, 'simularVerificacionQR']);
+    Route::post('/simular-paypal', [CU23_GestionarPagosController::class, 'simularCheckoutPayPal']);
+    Route::get('/comprobante/{idPago}', [CU23_GestionarPagosController::class, 'obtenerComprobante']);
 });
 
 // ==========================================

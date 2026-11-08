@@ -81,4 +81,20 @@ class Cita extends Model
     {
         return $this->hasMany(\App\Models\PKG07_Laboratorios\CU18_VisualizarEstudios\LaboratorioEstudioConsulta::class, 'id_cita', 'id_cita');
     }
+
+    /**
+     * Historial de pagos de la cita
+     */
+    public function pagos()
+    {
+        return $this->hasMany(\App\Models\PKG05_GestionCitasConcurrencia\CU23_GestionarPagos\Pago::class, 'id_cita', 'id_cita');
+    }
+
+    /**
+     * Último pago activo registrado
+     */
+    public function ultimoPago()
+    {
+        return $this->hasOne(\App\Models\PKG05_GestionCitasConcurrencia\CU23_GestionarPagos\Pago::class, 'id_cita', 'id_cita')->latest('fecha_pago');
+    }
 }

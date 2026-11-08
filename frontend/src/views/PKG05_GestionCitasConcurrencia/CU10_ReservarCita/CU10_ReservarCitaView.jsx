@@ -16,12 +16,16 @@ import {
   ChevronRight,
   ShieldCheck,
   Check,
+  CreditCard,
 } from 'lucide-react';
 
 import { useCU10ReservaCitaController } from '../../../controllers/PKG05_GestionCitasConcurrencia/CU10_ReservarCita/CU10_ReservaCitaController';
 import { ESTADOS_CITA } from '../../../models/PKG05_GestionCitasConcurrencia/CU10_ReservarCita/CitaModel';
 import { ModalReservarCita } from './ModalReservarCita';
 import { ModalFichaCita } from './ModalFichaCita';
+import ModalGestionPago from '../CU23_GestionarPagos/ModalGestionPago';
+import ModalComprobantePago from '../CU23_GestionarPagos/ModalComprobantePago';
+import CU23_GestionarPagosModel from '../../../models/PKG05_GestionCitasConcurrencia/CU23_GestionarPagos/CU23_GestionarPagosModel';
 
 export const CU10_ReservarCitaView = () => {
   const {
@@ -59,6 +63,43 @@ export const CU10_ReservarCitaView = () => {
     verFichaCita,
     cambiarEstadoCita,
   } = useCU10ReservaCitaController();
+
+  const [modalPagoOpen, setModalPagoOpen] = React.useState(false);
+  const [citaParaPago, setCitaParaPago] = React.useState(null);
+  const [modalComprobanteOpen, setModalComprobanteOpen] = React.useState(false);
+  const [comprobanteGenerado, setComprobanteGenerado] = React.useState(null);
+  const [pagoLoading, setPagoLoading] = React.useState(false);
+
+  const handleAbrirCobro = (cita) => {
+    setCitaParaPago({
+      id_cita: cita.id_cita,
+      codigo_cita: cita.codigo_cita,
+      paciente_nombre: cita.paciente_nombre,
+      especialidad: cita.especialidad_nombre,
+      fecha_cita: cita.fecha_cita,
+      hora_inicio: cita.horario_rango?.split(' - ')[0] || '08:00',
+      tarifa_sugerida: 150.0,
+    });
+    setModalPagoOpen(true);
+  };
+
+  const handleConfirmarPagoDirecto = async (datosPago) => {
+    setPagoLoading(true);
+    try {
+      const res = await CU23_GestionarPagosModel.registrarPago(datosPago);
+      setModalPagoOpen(false);
+      if (res.comprobante) {
+        setComprobanteGenerado(res.comprobante);
+        setModalComprobanteOpen(true);
+      }
+      setSuccessMsg('¡Pago de consulta médica registrado exitosamente!');
+      fetchCitas();
+    } catch (err) {
+      setError(err.message || 'Error al procesar el pago.');
+    } finally {
+      setPagoLoading(false);
+    }
+  };
 
   const handleReservarCita = reservarCita;
   const handleCambiarEstado = cambiarEstadoCita;
@@ -530,6 +571,29 @@ export const CU10_ReservarCitaView = () => {
                             <Printer size={14} />
                           </button>
 
+                          {/* Cobrar / Pagar Cita */}
+                          <button
+                            type="button"
+                            onClick={() => handleAbrirCobro(cita)}
+                            title="Cobrar / Registrar Pago de la Cita"
+                            style={{
+                              background: '#f0fdf4',
+                              border: '1px solid #bbf7d0',
+                              color: '#15803d',
+                              padding: '0.4rem 0.65rem',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                            }}
+                          >
+                            <CreditCard size={13} />
+                            <span>Cobrar</span>
+                          </button>
+
                           {/* Confirmar Asistencia si está PROGRAMADA */}
                           {cita.estado_cita === 'PROGRAMADA' && (
                             <button
@@ -641,6 +705,23 @@ export const CU10_ReservarCitaView = () => {
         isOpen={modalFichaOpen}
         onClose={closeFichaModal}
         cita={citaForFicha}
+        onPagar={(c) => handleAbrirCobro(c)}
+      />
+
+      {/* MODAL GESTIÓN DE PAGO DIRECTO */}
+      <ModalGestionPago
+        isOpen={modalPagoOpen}
+        onClose={() => setModalPagoOpen(false)}
+        cita={citaParaPago}
+        onConfirmarPago={handleConfirmarPagoDirecto}
+        loading={pagoLoading}
+      />
+
+      {/* MODAL COMPROBANTE OFICIAL DE PAGO */}
+      <ModalComprobantePago
+        isOpen={modalComprobanteOpen}
+        onClose={() => setModalComprobanteOpen(false)}
+        comprobante={comprobanteGenerado}
       />
     </div>
   );
