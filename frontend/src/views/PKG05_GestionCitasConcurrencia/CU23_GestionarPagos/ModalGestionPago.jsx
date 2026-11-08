@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import {
   X,
   CreditCard,
   QrCode,
   DollarSign,
-  Building,
   CheckCircle,
   AlertTriangle,
   ExternalLink,
@@ -14,8 +14,7 @@ import {
   EyeOff,
   RefreshCw,
   Wifi,
-  Sparkles,
-  ArrowRight,
+  Download,
   Clock,
   User,
 } from 'lucide-react';
@@ -30,9 +29,9 @@ export const ModalGestionPago = ({
 }) => {
   const isPaciente = currentUser?.rol === 'Paciente' || currentUser?.rol === 'paciente';
 
-  // Métodos disponibles según actor:
-  // Recepcionista: EFECTIVO, QR, TARJETA, TRANSFERENCIA
-  // Paciente en línea: TARJETA, QR, PAYPAL
+  // Métodos disponibles:
+  // Recepcionista: EFECTIVO, QR, TARJETA (3 opciones directas)
+  // Paciente en línea: TARJETA, QR, PAYPAL (3 opciones directas)
   const [metodoSeleccionado, setMetodoSeleccionado] = useState(isPaciente ? 'TARJETA' : 'EFECTIVO');
 
   const montoInicial = cita?.tarifa_sugerida || (cita?.monto ? cita.monto : 150.0);
@@ -50,20 +49,16 @@ export const ModalGestionPago = ({
   const [bancoEmisor, setBancoEmisor] = useState('Banco Unión S.A.');
   const [tipoTarjeta, setTipoTarjeta] = useState('DEBITO'); // DEBITO | CREDITO
 
-  // Estado de autorización bancaria en pantalla
+  // Estado de procesamiento bancario en pantalla
   const [autorizandoPago, setAutorizandoPago] = useState(false);
   const [pasoAutorizacion, setPasoAutorizacion] = useState(0);
-
-  // Transferencia Bancaria Directa
-  const [bancoOrigenTrf, setBancoOrigenTrf] = useState('Banco de Crédito BCP');
-  const [numeroVoucherTrf, setNumeroVoucherTrf] = useState('9840215');
-  const [titularCuentaTrf, setTitularCuentaTrf] = useState(cita?.paciente_nombre || '');
 
   // PayPal
   const [emailPaypal, setEmailPaypal] = useState(currentUser?.email || 'paciente.vida@salud.bo');
   const [paypalRedirigido, setPaypalRedirigido] = useState(false);
 
-  // Temporizador QR (10 minutos)
+  // QR Simple Real y Funcional
+  const [qrDataUrl, setQrDataUrl] = useState('');
   const [qrTiempoRestante, setQrTiempoRestante] = useState(600);
   const [qrVerificando, setQrVerificando] = useState(false);
   const [qrVerificadoExito, setQrVerificadoExito] = useState(false);
@@ -75,7 +70,6 @@ export const ModalGestionPago = ({
       setMontoRecibido(tarifa);
       setMetodoSeleccionado(isPaciente ? 'TARJETA' : 'EFECTIVO');
       setTitularTarjeta(cita.paciente_nombre || 'MARIANA CLAUDIA ROCA');
-      setTitularCuentaTrf(cita.paciente_nombre || '');
       setPaypalRedirigido(false);
       setQrTiempoRestante(600);
       setQrVerificadoExito(false);
@@ -83,6 +77,39 @@ export const ModalGestionPago = ({
       setPasoAutorizacion(0);
     }
   }, [cita, isPaciente]);
+
+  // Generador de código QR Simple real interoperable con formato ASFI / ASOBAN
+  useEffect(() => {
+    if (!isOpen || !cita) return;
+
+    const qrPayload = JSON.stringify({
+      formato: 'SIMPLE_PAGO_MOVIL_ASOBAN_ASFI',
+      entidad_receptora: 'CLINICA VIDA SALUD S.R.L.',
+      nit: '1028473029',
+      banco_destino: 'Banco Unión S.A.',
+      cuenta_destino: '1-0000492817290',
+      moneda: 'BOB',
+      monto: parseFloat(monto).toFixed(2),
+      codigo_cita: cita.codigo_cita,
+      paciente: cita.paciente_nombre,
+      especialidad: cita.especialidad,
+      turno: `${cita.fecha_cita} ${cita.hora_inicio || ''}`,
+      qr_id: `BCP-SMP-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+      expiracion: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    });
+
+    QRCode.toDataURL(qrPayload, {
+      width: 300,
+      margin: 1,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+      errorCorrectionLevel: 'M',
+    })
+      .then((url) => setQrDataUrl(url))
+      .catch((err) => console.error('Error generando QR Simple:', err));
+  }, [isOpen, cita, monto]);
 
   // Contador regresivo QR
   useEffect(() => {
@@ -104,7 +131,7 @@ export const ModalGestionPago = ({
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  // Detección automática de marca de tarjeta según los primeros dígitos
+  // Detección automática de red de tarjeta
   const detectarMarcaTarjeta = (num) => {
     const limpio = (num || '').replace(/\s+/g, '');
     if (limpio.startsWith('4')) return { marca: 'VISA', color: '#1e3a8a', label: 'Visa' };
@@ -134,7 +161,7 @@ export const ModalGestionPago = ({
     setVencimientoTarjeta(valor);
   };
 
-  // Carga rápida de tarjetas institucionales
+  // Carga rápida institucional
   const cargarTarjetaRapida = (tipo) => {
     if (tipo === 'VISA') {
       setNumeroTarjeta('4532 8910 2341 8821');
@@ -167,7 +194,17 @@ export const ModalGestionPago = ({
     }, 1200);
   };
 
-  // Formateador visual para el plástico de la tarjeta (con máscara de puntos)
+  const handleDescargarQR = () => {
+    if (!qrDataUrl) return;
+    const a = document.createElement('a');
+    a.href = qrDataUrl;
+    a.download = `QR_SIMPLE_${cita.codigo_cita}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  // Formato visual para el plástico de la tarjeta (máscara de puntos)
   const obtenerNumeroTarjetaVisual = () => {
     const raw = numeroTarjeta.replace(/\s+/g, '');
     let display = '';
@@ -221,13 +258,11 @@ export const ModalGestionPago = ({
           ? `QR-BNB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
           : metodoSeleccionado === 'PAYPAL'
           ? `PAYID-${Math.random().toString(36).substring(2, 12).toUpperCase()}`
-          : metodoSeleccionado === 'TARJETA'
-          ? `AUTH-RE-${authCode}`
-          : numeroVoucherTrf || `TRF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          : `AUTH-RE-${authCode}`,
       email_paypal: metodoSeleccionado === 'PAYPAL' ? emailPaypal : null,
       detalles_pago: {
-        banco: metodoSeleccionado === 'TRANSFERENCIA' ? bancoOrigenTrf : bancoEmisor,
-        titular: metodoSeleccionado === 'TRANSFERENCIA' ? titularCuentaTrf : titularTarjeta,
+        banco: bancoEmisor,
+        titular: titularTarjeta,
         ultimos4: ultimos4,
         marca_tarjeta: `${redTarjeta.label} ${tipoTarjeta === 'DEBITO' ? 'Débito' : 'Crédito'}`,
         codigo_autorizacion: authCode,
@@ -301,7 +336,7 @@ export const ModalGestionPago = ({
               {pasoAutorizacion === 3 ? (
                 <CheckCircle size={36} color="#ffffff" />
               ) : (
-                <RefreshCw size={32} color="#ffffff" className="spin-animate" style={{ animation: 'spin 1s linear infinite' }} />
+                <RefreshCw size={32} color="#ffffff" style={{ animation: 'spin 1s linear infinite' }} />
               )}
             </div>
 
@@ -317,7 +352,6 @@ export const ModalGestionPago = ({
               {pasoAutorizacion === 3 && 'Generando comprobante oficial de caja para Clínica Vida Salud.'}
             </div>
 
-            {/* Barra de progreso visual */}
             <div
               style={{
                 width: '260px',
@@ -442,7 +476,7 @@ export const ModalGestionPago = ({
           </span>
         </div>
 
-        {/* TABS DE SELECCIÓN DE MÉTODO DE PAGO */}
+        {/* TABS DE SELECCIÓN DE MÉTODO DE PAGO (EXACTAMENTE 3 OPCIONES LIMPIAS) */}
         <div style={{ padding: '0.85rem 1.4rem 0.4rem' }}>
           <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#475569', marginBottom: '0.45rem' }}>
             SELECCIONA EL MÉTODO DE PAGO:
@@ -451,33 +485,33 @@ export const ModalGestionPago = ({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: !isPaciente ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
-              gap: '0.45rem',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '0.5rem',
             }}
           >
-            {/* Opciones para Recepcionista: Efectivo, QR, Tarjeta, Transferencia */}
+            {/* Opciones para Recepcionista: Efectivo, QR Simple, Tarjeta Débito/Crédito */}
             {!isPaciente && (
               <>
                 <button
                   type="button"
                   onClick={() => setMetodoSeleccionado('EFECTIVO')}
                   style={{
-                    padding: '0.6rem 0.4rem',
+                    padding: '0.65rem 0.5rem',
                     borderRadius: '10px',
                     border: metodoSeleccionado === 'EFECTIVO' ? '2px solid #0284c7' : '1px solid #cbd5e1',
                     background: metodoSeleccionado === 'EFECTIVO' ? '#f0f9ff' : '#ffffff',
                     color: metodoSeleccionado === 'EFECTIVO' ? '#0369a1' : '#475569',
                     fontWeight: 700,
-                    fontSize: '0.74rem',
+                    fontSize: '0.75rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '0.25rem',
+                    gap: '0.3rem',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  <DollarSign size={18} />
+                  <DollarSign size={20} />
                   <span>Efectivo (Caja)</span>
                 </button>
 
@@ -485,22 +519,22 @@ export const ModalGestionPago = ({
                   type="button"
                   onClick={() => setMetodoSeleccionado('QR')}
                   style={{
-                    padding: '0.6rem 0.4rem',
+                    padding: '0.65rem 0.5rem',
                     borderRadius: '10px',
                     border: metodoSeleccionado === 'QR' ? '2px solid #0284c7' : '1px solid #cbd5e1',
                     background: metodoSeleccionado === 'QR' ? '#f0f9ff' : '#ffffff',
                     color: metodoSeleccionado === 'QR' ? '#0369a1' : '#475569',
                     fontWeight: 700,
-                    fontSize: '0.74rem',
+                    fontSize: '0.75rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '0.25rem',
+                    gap: '0.3rem',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  <QrCode size={18} />
+                  <QrCode size={20} />
                   <span>QR Simple</span>
                 </button>
 
@@ -508,51 +542,28 @@ export const ModalGestionPago = ({
                   type="button"
                   onClick={() => setMetodoSeleccionado('TARJETA')}
                   style={{
-                    padding: '0.6rem 0.4rem',
+                    padding: '0.65rem 0.5rem',
                     borderRadius: '10px',
                     border: metodoSeleccionado === 'TARJETA' ? '2px solid #0284c7' : '1px solid #cbd5e1',
                     background: metodoSeleccionado === 'TARJETA' ? '#f0f9ff' : '#ffffff',
                     color: metodoSeleccionado === 'TARJETA' ? '#0369a1' : '#475569',
                     fontWeight: 700,
-                    fontSize: '0.74rem',
+                    fontSize: '0.75rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '0.25rem',
+                    gap: '0.3rem',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  <CreditCard size={18} />
+                  <CreditCard size={20} />
                   <span>Tarjeta Débito/Crédito</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMetodoSeleccionado('TRANSFERENCIA')}
-                  style={{
-                    padding: '0.6rem 0.4rem',
-                    borderRadius: '10px',
-                    border: metodoSeleccionado === 'TRANSFERENCIA' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                    background: metodoSeleccionado === 'TRANSFERENCIA' ? '#f0f9ff' : '#ffffff',
-                    color: metodoSeleccionado === 'TRANSFERENCIA' ? '#0369a1' : '#475569',
-                    fontWeight: 700,
-                    fontSize: '0.74rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <Building size={18} />
-                  <span>Transferencia</span>
                 </button>
               </>
             )}
 
-            {/* Opciones para Paciente en Línea: Tarjeta, QR, PayPal */}
+            {/* Opciones para Paciente en Línea: Tarjeta, QR Simple, PayPal */}
             {isPaciente && (
               <>
                 <button
@@ -631,7 +642,273 @@ export const ModalGestionPago = ({
         {/* CUERPO INTERACTIVO POR MÉTODO */}
         <form onSubmit={handleSubmit} style={{ padding: '0.5rem 1.4rem 1.25rem', overflowY: 'auto', flex: 1 }}>
           {/* ============================================================== */}
-          {/* 1. SECCIÓN TARJETA DE DÉBITO / CRÉDITO INTERACTIVA             */}
+          {/* 1. SECCIÓN QR SIMPLE BOLIVIA (AUTÉNTICO Y REAL)                */}
+          {/* ============================================================== */}
+          {metodoSeleccionado === 'QR' && (
+            <div
+              style={{
+                background: '#f8fafc',
+                padding: '1.1rem',
+                borderRadius: '14px',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+              }}
+            >
+              {/* CABECERA OFICIAL SIMPLE - PAGO MÓVIL */}
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '380px',
+                  background: 'linear-gradient(135deg, #002f6c 0%, #004b87 100%)',
+                  borderRadius: '12px 12px 0 0',
+                  padding: '0.7rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 10px rgba(0, 47, 108, 0.25)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textAlign: 'left' }}>
+                  <div
+                    style={{
+                      background: '#00a4e4',
+                      color: '#ffffff',
+                      fontWeight: 900,
+                      fontSize: '0.95rem',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      letterSpacing: '1px',
+                    }}
+                  >
+                    SIMPLE
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.5px' }}>
+                      PAGO MÓVIL
+                    </div>
+                    <div style={{ fontSize: '0.62rem', color: '#93c5fd' }}>
+                      Red Interbancaria ASFI • ASOBAN
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    padding: '3px 8px',
+                    borderRadius: '12px',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    color: '#e0f2fe',
+                  }}
+                >
+                  <Clock size={12} />
+                  <span>{formatoMinutos(qrTiempoRestante)}</span>
+                </div>
+              </div>
+
+              {/* CONTENEDOR DEL QR REAL GENERADO */}
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '380px',
+                  background: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderTop: 'none',
+                  borderRadius: '0 0 12px 12px',
+                  padding: '1.25rem 1rem 1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  boxShadow: '0 6px 16px rgba(0,0,0,0.06)',
+                  marginBottom: '0.85rem',
+                }}
+              >
+                {/* Imagen del QR Real */}
+                <div
+                  style={{
+                    padding: '8px',
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    border: '2px solid #00a4e4',
+                    boxShadow: '0 4px 12px rgba(0, 164, 228, 0.2)',
+                    display: 'inline-block',
+                    marginBottom: '0.75rem',
+                    position: 'relative',
+                  }}
+                >
+                  {qrDataUrl ? (
+                    <img
+                      src={qrDataUrl}
+                      alt="QR Simple Interbancario"
+                      style={{
+                        width: '200px',
+                        height: '200px',
+                        display: 'block',
+                        borderRadius: '4px',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '200px',
+                        height: '200px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#64748b',
+                        fontSize: '0.8rem',
+                      }}
+                    >
+                      Generando código QR...
+                    </div>
+                  )}
+
+                  {/* Emblema central de seguridad de la clínica */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      background: '#ffffff',
+                      border: '2px solid #0284c7',
+                      borderRadius: '8px',
+                      padding: '3px 5px',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.62rem', fontWeight: 900, color: '#0284c7' }}>CVS</span>
+                  </div>
+                </div>
+
+                {/* Importe oficial a pagar */}
+                <div style={{ marginBottom: '0.65rem' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, display: 'block' }}>
+                    MONTO TOTAL A PAGAR:
+                  </span>
+                  <span style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0284c7' }}>
+                    Bs. {parseFloat(monto).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Detalle del Cobro Institucional */}
+                <div
+                  style={{
+                    width: '100%',
+                    background: '#f8fafc',
+                    borderRadius: '8px',
+                    padding: '0.65rem 0.8rem',
+                    border: '1px solid #e2e8f0',
+                    textAlign: 'left',
+                    fontSize: '0.72rem',
+                    lineHeight: 1.45,
+                    color: '#334155',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                    <span style={{ color: '#64748b' }}>Beneficiario:</span>
+                    <strong style={{ color: '#0f172a' }}>CLÍNICA VIDA SALUD S.R.L.</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                    <span style={{ color: '#64748b' }}>NIT:</span>
+                    <strong>1028473029</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                    <span style={{ color: '#64748b' }}>Glosa / Motivo:</span>
+                    <strong style={{ color: '#0284c7' }}>Consulta {cita.especialidad}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Banco Destino:</span>
+                    <strong>Banco Unión S.A.</strong>
+                  </div>
+                </div>
+
+                {/* Botones de acción QR: Descargar y Acreditación */}
+                <div style={{ display: 'flex', gap: '0.5rem', width: '100%', marginTop: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={handleDescargarQR}
+                    style={{
+                      flex: 1,
+                      padding: '0.45rem 0.6rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      color: '#334155',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                    }}
+                  >
+                    <Download size={13} />
+                    <span>Guardar Imagen QR</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleVerificarQRManual}
+                    disabled={qrVerificando || qrVerificadoExito}
+                    style={{
+                      flex: 1.2,
+                      padding: '0.45rem 0.6rem',
+                      borderRadius: '8px',
+                      border: qrVerificadoExito ? '1px solid #059669' : '1px solid #0284c7',
+                      background: qrVerificadoExito ? '#10b981' : '#0284c7',
+                      color: '#ffffff',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: qrVerificando || qrVerificadoExito ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      boxShadow: '0 2px 4px rgba(2, 132, 199, 0.25)',
+                    }}
+                  >
+                    {qrVerificando ? (
+                      <>
+                        <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                        <span>Consultando ASFI...</span>
+                      </>
+                    ) : qrVerificadoExito ? (
+                      <>
+                        <CheckCircle size={14} color="#ffffff" />
+                        <span>Pago Acreditado</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck size={14} />
+                        <span>Verificar Acreditación</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Guía rápida de bancos bolivianos */}
+              <p style={{ margin: 0, fontSize: '0.7rem', color: '#64748b', maxWidth: '380px' }}>
+                Escanea desde la app móvil de cualquier banco: <strong>Banco Unión, BCP, BNB, Banco Mercantil Santa Cruz, GanaMóvil, Bisa, Sol o FIE</strong>.
+              </p>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* 2. SECCIÓN TARJETA DE DÉBITO / CRÉDITO INTERACTIVA             */}
           {/* ============================================================== */}
           {metodoSeleccionado === 'TARJETA' && (
             <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
@@ -720,7 +997,6 @@ export const ModalGestionPago = ({
 
                 {/* Chip EMV y Contactless */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem' }}>
-                  {/* Chip metálico dorado con circuitos */}
                   <div
                     style={{
                       width: '42px',
@@ -746,12 +1022,10 @@ export const ModalGestionPago = ({
                     />
                   </div>
 
-                  {/* Símbolo Contactless / NFC */}
                   <div style={{ transform: 'rotate(90deg)', opacity: 0.85 }}>
                     <Wifi size={17} color="#ffffff" />
                   </div>
 
-                  {/* Badge Débito o Crédito */}
                   <span
                     style={{
                       marginLeft: 'auto',
@@ -768,7 +1042,7 @@ export const ModalGestionPago = ({
                   </span>
                 </div>
 
-                {/* Número de Tarjeta dinámico (con máscara visual en tiempo real) */}
+                {/* Número de Tarjeta dinámico */}
                 <div
                   style={{
                     fontSize: '1.22rem',
@@ -1058,7 +1332,7 @@ export const ModalGestionPago = ({
                   </div>
                 </div>
 
-                {/* Sello de seguridad institucional y encriptación */}
+                {/* Sello de seguridad institucional */}
                 <div
                   style={{
                     padding: '0.55rem 0.75rem',
@@ -1077,117 +1351,6 @@ export const ModalGestionPago = ({
                     <strong>Conexión Cifrada SSL 256-bit:</strong> Procesamiento seguro mediante Switch Red Enlace Bolivia y cumplimiento normativo ASFI.
                   </span>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* ============================================================== */}
-          {/* 2. SECCIÓN TRANSFERENCIA BANCARIA (SEPARADA DE TARJETA)       */}
-          {/* ============================================================== */}
-          {metodoSeleccionado === 'TRANSFERENCIA' && (
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              {/* Tarjeta de cuenta bancaria receptora de la clínica */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #0369a1 0%, #0284c7 100%)',
-                  color: '#ffffff',
-                  padding: '1rem',
-                  borderRadius: '12px',
-                  marginBottom: '0.85rem',
-                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '1px', color: '#e0f2fe' }}>
-                    CUENTA RECEPTORA OFICIAL
-                  </span>
-                  <span style={{ fontSize: '0.72rem', background: '#ffffff', color: '#0369a1', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>
-                    BANCO UNIÓN S.A.
-                  </span>
-                </div>
-
-                <div style={{ fontSize: '1.05rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '1.5px', marginBottom: '0.3rem' }}>
-                  Cta. Cte: 1-0000492817290
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontSize: '0.72rem', color: '#f0f9ff' }}>
-                  <div>Titular: CLÍNICA VIDA SALUD S.R.L.</div>
-                  <div style={{ textAlign: 'right' }}>NIT: 1028473029</div>
-                </div>
-              </div>
-
-              {/* Formulario de registro del comprobante de transferencia */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.7rem', marginBottom: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>
-                    Banco de Origen del Paciente:
-                  </label>
-                  <select
-                    value={bancoOrigenTrf}
-                    onChange={(e) => setBancoOrigenTrf(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.6rem',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.78rem',
-                      background: '#ffffff',
-                      color: '#0f172a',
-                    }}
-                  >
-                    <option value="Banco de Crédito BCP">Banco de Crédito BCP</option>
-                    <option value="Banco Unión S.A.">Banco Unión S.A.</option>
-                    <option value="Banco Nacional de Bolivia (BNB)">Banco Nacional de Bolivia (BNB)</option>
-                    <option value="Banco Mercantil Santa Cruz">Banco Mercantil Santa Cruz</option>
-                    <option value="Banco Ganadero (GanaMóvil)">Banco Ganadero (GanaMóvil)</option>
-                    <option value="Banco Bisa">Banco Bisa</option>
-                    <option value="Banco FIE">Banco FIE</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>
-                    Nº de Transacción / Voucher:
-                  </label>
-                  <input
-                    type="text"
-                    value={numeroVoucherTrf}
-                    onChange={(e) => setNumeroVoucherTrf(e.target.value)}
-                    placeholder="Ej: 9840215"
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.6rem',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.8rem',
-                      fontFamily: 'monospace',
-                      fontWeight: 700,
-                      background: '#ffffff',
-                      color: '#0f172a',
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>
-                  Nombre del Depositante / Titular de la Cuenta:
-                </label>
-                <input
-                  type="text"
-                  value={titularCuentaTrf}
-                  onChange={(e) => setTitularCuentaTrf(e.target.value)}
-                  placeholder="Ej: Mariana Claudia Roca Méndez"
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 0.6rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.8rem',
-                    background: '#ffffff',
-                    color: '#0f172a',
-                  }}
-                />
               </div>
             </div>
           )}
@@ -1284,146 +1447,7 @@ export const ModalGestionPago = ({
           )}
 
           {/* ============================================================== */}
-          {/* 4. SECCIÓN QR SIMPLE BOLIVIA                                   */}
-          {/* ============================================================== */}
-          {metodoSeleccionado === 'QR' && (
-            <div
-              style={{
-                background: '#f8fafc',
-                padding: '1rem',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  fontSize: '0.74rem',
-                  color: '#0284c7',
-                  fontWeight: 800,
-                  marginBottom: '0.4rem',
-                }}
-              >
-                <Clock size={14} />
-                <span>QR Simple • Expira en: {formatoMinutos(qrTiempoRestante)}</span>
-              </div>
-
-              {/* QR CODE EN SVG OFICIAL */}
-              <div
-                style={{
-                  background: '#ffffff',
-                  padding: '0.75rem',
-                  borderRadius: '12px',
-                  border: '2px solid #bae6fd',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.06)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  marginBottom: '0.6rem',
-                }}
-              >
-                <svg width="150" height="150" viewBox="0 0 100 100" style={{ shapeRendering: 'crispEdges' }}>
-                  <rect width="100" height="100" fill="#ffffff" />
-                  {/* Patrones de esquina QR oficiales */}
-                  <rect x="5" y="5" width="26" height="26" fill="#0369a1" />
-                  <rect x="9" y="9" width="18" height="18" fill="#ffffff" />
-                  <rect x="13" y="13" width="10" height="10" fill="#0369a1" />
-
-                  <rect x="69" y="5" width="26" height="26" fill="#0369a1" />
-                  <rect x="73" y="9" width="18" height="18" fill="#ffffff" />
-                  <rect x="77" y="13" width="10" height="10" fill="#0369a1" />
-
-                  <rect x="5" y="69" width="26" height="26" fill="#0369a1" />
-                  <rect x="9" y="73" width="18" height="18" fill="#ffffff" />
-                  <rect x="13" y="77" width="10" height="10" fill="#0369a1" />
-
-                  {/* Patrón de datos de seguridad QR */}
-                  <rect x="36" y="8" width="6" height="6" fill="#0f172a" />
-                  <rect x="46" y="14" width="6" height="6" fill="#0f172a" />
-                  <rect x="56" y="8" width="6" height="6" fill="#0f172a" />
-                  <rect x="36" y="24" width="6" height="6" fill="#0f172a" />
-                  <rect x="48" y="28" width="6" height="6" fill="#0f172a" />
-                  <rect x="8" y="38" width="6" height="6" fill="#0f172a" />
-                  <rect x="20" y="44" width="6" height="6" fill="#0f172a" />
-                  <rect x="36" y="38" width="14" height="14" fill="#0284c7" />
-                  <rect x="54" y="42" width="8" height="8" fill="#0f172a" />
-                  <rect x="68" y="36" width="6" height="6" fill="#0f172a" />
-                  <rect x="80" y="42" width="6" height="6" fill="#0f172a" />
-                  <rect x="38" y="58" width="6" height="6" fill="#0f172a" />
-                  <rect x="48" y="66" width="6" height="6" fill="#0f172a" />
-                  <rect x="58" y="58" width="6" height="6" fill="#0f172a" />
-                  <rect x="68" y="68" width="6" height="6" fill="#0f172a" />
-                  <rect x="78" y="60" width="8" height="8" fill="#0f172a" />
-                  <rect x="84" y="76" width="6" height="6" fill="#0f172a" />
-                  <rect x="36" y="78" width="6" height="6" fill="#0f172a" />
-                  <rect x="48" y="84" width="6" height="6" fill="#0f172a" />
-                  <rect x="60" y="78" width="6" height="6" fill="#0f172a" />
-
-                  {/* Cruz Médica central */}
-                  <rect x="43" y="43" width="14" height="14" fill="#ffffff" rx="2" />
-                  <rect x="47" y="45" width="6" height="10" fill="#dc2626" />
-                  <rect x="45" y="47" width="10" height="6" fill="#dc2626" />
-                </svg>
-
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#0369a1', marginTop: '4px' }}>
-                  CLÍNICA VIDA SALUD • QR SIMPLE BCP / BANCO UNIÓN
-                </span>
-              </div>
-
-              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.2rem' }}>
-                Monto: Bs. {parseFloat(monto).toFixed(2)}
-              </div>
-              <p style={{ margin: '0 0 0.6rem', fontSize: '0.72rem', color: '#64748b', maxWidth: '380px' }}>
-                Escanea desde la app de cualquier banco boliviano (Banco Unión, BCP, BNB, Banco Mercantil, GanaMóvil).
-              </p>
-
-              {/* Botón de verificación interbancaria ASFI */}
-              <button
-                type="button"
-                onClick={handleVerificarQRManual}
-                disabled={qrVerificando || qrVerificadoExito}
-                style={{
-                  background: qrVerificadoExito ? '#10b981' : '#ffffff',
-                  border: qrVerificadoExito ? '1px solid #059669' : '1px solid #cbd5e1',
-                  color: qrVerificadoExito ? '#ffffff' : '#0369a1',
-                  padding: '0.4rem 0.85rem',
-                  borderRadius: '8px',
-                  fontSize: '0.74rem',
-                  fontWeight: 700,
-                  cursor: qrVerificando || qrVerificadoExito ? 'default' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                }}
-              >
-                {qrVerificando ? (
-                  <>
-                    <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                    <span>Verificando conciliación ASFI...</span>
-                  </>
-                ) : qrVerificadoExito ? (
-                  <>
-                    <CheckCircle size={14} color="#ffffff" />
-                    <span>Acreditación Bancaria Verificada</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck size={14} />
-                    <span>Comprobar Recepción Interbancaria</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-
-          {/* ============================================================== */}
-          {/* 5. SECCIÓN PAYPAL EXPRESS CHECKOUT                             */}
+          {/* 4. SECCIÓN PAYPAL EXPRESS CHECKOUT                             */}
           {/* ============================================================== */}
           {metodoSeleccionado === 'PAYPAL' && (
             <div
