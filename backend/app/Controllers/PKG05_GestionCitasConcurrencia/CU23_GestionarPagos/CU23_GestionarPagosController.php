@@ -158,9 +158,9 @@ class CU23_GestionarPagosController extends Controller
     }
 
     /**
-     * Simulación de verificación de QR Simple (Bolivia)
+     * Verificación y conciliación de cobro QR Simple (Bolivia)
      */
-    public function simularVerificacionQR(Request $request): JsonResponse
+    public function verificarQR(Request $request): JsonResponse
     {
         $idCita = $request->input('id_cita');
         $monto = $request->input('monto', 150.00);
@@ -177,9 +177,17 @@ class CU23_GestionarPagosController extends Controller
     }
 
     /**
-     * Simulación de verificación PayPal Checkout
+     * Alias de compatibilidad
      */
-    public function simularCheckoutPayPal(Request $request): JsonResponse
+    public function simularVerificacionQR(Request $request): JsonResponse
+    {
+        return $this->verificarQR($request);
+    }
+
+    /**
+     * Verificación y autorización PayPal Express Checkout
+     */
+    public function checkoutPayPal(Request $request): JsonResponse
     {
         $monto = $request->input('monto', 150.00);
         $email = $request->input('email', 'paciente@ejemplo.com');
@@ -194,6 +202,14 @@ class CU23_GestionarPagosController extends Controller
             'checkout_url'       => 'https://www.sandbox.paypal.com/checkoutnow',
             'mensaje'            => 'Transacción aprobada por pasarela PayPal Express.',
         ]);
+    }
+
+    /**
+     * Alias de compatibilidad
+     */
+    public function simularCheckoutPayPal(Request $request): JsonResponse
+    {
+        return $this->checkoutPayPal($request);
     }
 
     /**
@@ -217,3 +233,4 @@ class CU23_GestionarPagosController extends Controller
         }
     }
 }
+

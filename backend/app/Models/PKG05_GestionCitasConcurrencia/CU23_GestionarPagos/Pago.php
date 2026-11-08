@@ -65,3 +65,4 @@ class Pago extends Model
         return $this->belongsTo(Usuario::class, 'id_usuario_cajero', 'id_usuario');
     }
 }
+

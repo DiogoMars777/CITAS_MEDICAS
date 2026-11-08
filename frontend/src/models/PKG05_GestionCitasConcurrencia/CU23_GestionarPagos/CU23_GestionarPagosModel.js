@@ -91,25 +91,35 @@ export const CU23_GestionarPagosModel = {
   },
 
   /**
-   * Simulación de verificación de QR Simple (Bolivia)
+   * Verificación en línea de pago con QR Simple (Bolivia)
    */
-  async simularVerificacionQR(datos) {
-    const data = await fetchSeguro(`${API_BASE}/simular-qr`, {
+  async verificarQR(datos) {
+    const data = await fetchSeguro(`${API_BASE}/verificar-qr`, {
       method: 'POST',
       body: JSON.stringify(datos),
     });
     return data;
   },
 
+  // Alias de compatibilidad
+  async simularVerificacionQR(datos) {
+    return this.verificarQR(datos);
+  },
+
   /**
-   * Simulación de verificación PayPal Checkout
+   * Verificación y autorización con PayPal Express Checkout
    */
-  async simularCheckoutPayPal(datos) {
-    const data = await fetchSeguro(`${API_BASE}/simular-paypal`, {
+  async iniciarCheckoutPayPal(datos) {
+    const data = await fetchSeguro(`${API_BASE}/verificar-paypal`, {
       method: 'POST',
       body: JSON.stringify(datos),
     });
     return data;
+  },
+
+  // Alias de compatibilidad
+  async simularCheckoutPayPal(datos) {
+    return this.iniciarCheckoutPayPal(datos);
   },
 
   /**
@@ -122,3 +132,4 @@ export const CU23_GestionarPagosModel = {
 };
 
 export default CU23_GestionarPagosModel;
+

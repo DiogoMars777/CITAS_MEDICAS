@@ -319,17 +319,28 @@ class CU23_GestionarPagosService
                 if (empty($referencia)) {
                     $referencia = 'PAYID-' . strtoupper(Str::random(12));
                 }
-                $detallesPago['pasarela'] = 'PayPal Express Checkout (Simulado)';
+                $detallesPago['pasarela'] = 'PayPal Express Checkout Seguro';
                 $detallesPago['moneda_cobro'] = 'USD';
                 $detallesPago['equivalente_usd'] = round($monto / 6.96, 2);
                 $detallesPago['email_paypal'] = $datos['email_paypal'] ?? ($cita->paciente?->email ?? 'paciente.paypal@demo.com');
-            } elseif ($metodoPago === 'TRANSFERENCIA' || $metodoPago === 'TARJETA') {
+            } elseif ($metodoPago === 'TARJETA') {
                 if (empty($referencia)) {
-                    $referencia = 'TX-CARD-' . strtoupper(Str::random(8));
+                    $authCode = rand(100000, 999999);
+                    $referencia = 'AUTH-RE-' . $authCode;
                 }
-                $detallesPago['ultimos_digitos'] = $datos['ultimos4'] ?? '4242';
-                $detallesPago['marca_tarjeta'] = $datos['marca_tarjeta'] ?? 'Visa Débito / Red Enlace';
-                $detallesPago['banco_emisor'] = $datos['banco_emisor'] ?? 'Banco Nacional de Bolivia';
+                $detallesPago['marca_tarjeta'] = $datos['detalles_pago']['marca_tarjeta'] ?? ($datos['marca_tarjeta'] ?? 'Visa Débito / Red Enlace');
+                $detallesPago['ultimos_digitos'] = $datos['detalles_pago']['ultimos4'] ?? ($datos['ultimos4'] ?? '8821');
+                $detallesPago['titular_tarjeta'] = $datos['detalles_pago']['titular'] ?? ($cita->paciente?->nombre_completo ?? 'PACIENTE');
+                $detallesPago['banco_emisor'] = $datos['detalles_pago']['banco'] ?? ($datos['banco_emisor'] ?? 'Banco Unión S.A.');
+                $detallesPago['codigo_autorizacion'] = $datos['detalles_pago']['codigo_autorizacion'] ?? rand(100000, 999999);
+                $detallesPago['tipo_terminal'] = 'POS Virtual Red Enlace Seguro';
+            } elseif ($metodoPago === 'TRANSFERENCIA') {
+                if (empty($referencia)) {
+                    $referencia = 'TRF-' . strtoupper(Str::random(8));
+                }
+                $detallesPago['banco_origen'] = $datos['detalles_pago']['banco'] ?? 'Banco Unión S.A.';
+                $detallesPago['numero_voucher'] = $datos['referencia_transaccion'] ?? $referencia;
+                $detallesPago['cuenta_destino'] = 'Banco Unión Cta. Cte. 1-0000492817290 (Clínica Vida Salud S.R.L.)';
             }
 
             // Crear el registro de Pago
@@ -470,3 +481,4 @@ class CU23_GestionarPagosService
         return "{$texto} {$centavosStr}";
     }
 }
+

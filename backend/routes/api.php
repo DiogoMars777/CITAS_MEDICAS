@@ -183,8 +183,10 @@ Route::prefix('pagos')->group(function () {
     Route::get('/resumen-caja', [CU23_GestionarPagosController::class, 'resumenCaja']);
     Route::get('/cita/{idCita}', [CU23_GestionarPagosController::class, 'estadoPagoCita']);
     Route::post('/', [CU23_GestionarPagosController::class, 'registrarPago']);
-    Route::post('/simular-qr', [CU23_GestionarPagosController::class, 'simularVerificacionQR']);
-    Route::post('/simular-paypal', [CU23_GestionarPagosController::class, 'simularCheckoutPayPal']);
+    Route::post('/verificar-qr', [CU23_GestionarPagosController::class, 'verificarQR']);
+    Route::post('/simular-qr', [CU23_GestionarPagosController::class, 'verificarQR']);
+    Route::post('/verificar-paypal', [CU23_GestionarPagosController::class, 'checkoutPayPal']);
+    Route::post('/simular-paypal', [CU23_GestionarPagosController::class, 'checkoutPayPal']);
     Route::get('/comprobante/{idPago}', [CU23_GestionarPagosController::class, 'obtenerComprobante']);
 });
 

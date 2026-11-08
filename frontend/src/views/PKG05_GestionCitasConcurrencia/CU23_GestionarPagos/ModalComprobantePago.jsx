@@ -235,3 +235,4 @@ export const ModalComprobantePago = ({ isOpen, onClose, comprobante }) => {
 };
 
 export default ModalComprobantePago;
+

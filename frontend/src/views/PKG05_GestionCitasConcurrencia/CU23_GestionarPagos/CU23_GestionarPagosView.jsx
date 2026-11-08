@@ -669,3 +669,4 @@ export const CU23_GestionarPagosView = ({ currentUser }) => {
 };
 
 export default CU23_GestionarPagosView;
+
