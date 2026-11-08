@@ -8,6 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use App\Services\PKG05_GestionCitasConcurrencia\CU23_GestionarPagosService;
 use App\Models\PKG05_GestionCitasConcurrencia\CU23_GestionarPagos\Pago;
+use App\Models\PKG05_GestionCitasConcurrencia\CU10_ReservarCita\Cita;
+use App\Models\PKG01_Seguridad\CU02_BitacoraAuditoria\BitacoraAuditoria;
 
 /**
  * CU23: Gestionar Pagos y Cobranza de Citas Médicas

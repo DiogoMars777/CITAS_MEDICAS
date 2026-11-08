@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\PKG01_Seguridad\CU02_BitacoraAuditoria\BitacoraAuditoria;
+use App\Models\PKG01_Seguridad\CU01_Autenticacion\Usuario;
 
 class CU02_BitacoraAuditoriaController extends Controller
 {

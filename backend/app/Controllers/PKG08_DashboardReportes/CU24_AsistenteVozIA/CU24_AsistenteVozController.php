@@ -8,6 +8,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use App\Services\PKG08_DashboardReportes\CU24_AsistenteVozService;
+use App\Models\PKG02_MedicosEspecialidades\CU04_GestionEspecialidades\Especialidad;
+use App\Models\PKG02_MedicosEspecialidades\CU05_GestionMedicos\Medico;
+use App\Models\PKG04_AgendasHorarios\CU07_ConfigurarTurnos\TurnoMedico;
+use App\Models\PKG05_GestionCitasConcurrencia\CU10_ReservarCita\Cita;
+use App\Models\PKG01_Seguridad\CU02_BitacoraAuditoria\BitacoraAuditoria;
 
 /**
  * CU24: Asistente IA por Voz para Reserva Rápida de Citas

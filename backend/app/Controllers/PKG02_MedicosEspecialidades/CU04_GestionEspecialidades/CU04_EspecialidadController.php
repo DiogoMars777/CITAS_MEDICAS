@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\PKG02_MedicosEspecialidades\CU04_GestionEspecialidades\Especialidad;
-use App\Models\PKG02_MedicosEspecialidades\CU02_BitacoraAuditoria\BitacoraAuditoria;
+use App\Models\PKG01_Seguridad\CU02_BitacoraAuditoria\BitacoraAuditoria;
 
 class CU04_EspecialidadController extends Controller
 {

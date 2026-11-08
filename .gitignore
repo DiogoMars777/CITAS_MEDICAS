@@ -47,3 +47,4 @@ Diagrama_*.png
 
 # Scripts de prueba y auditoría local
 scratch/
+*.mmd
