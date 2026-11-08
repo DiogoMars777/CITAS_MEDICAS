@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import CU23_AsistenteVozModel from '../../../models/PKG08_DashboardReportes/CU23_AsistenteVozIA/CU23_AsistenteVozModel';
+import CU24_AsistenteVozModel from '../../../models/PKG08_DashboardReportes/CU24_AsistenteVozIA/CU24_AsistenteVozModel';
 
 export function useAsistenteVoz(currentUser) {
   // Mensajes de la conversación interactiva
@@ -130,8 +130,8 @@ export function useAsistenteVoz(currentUser) {
   const cargarEstadoInicial = async () => {
     try {
       const [estado, ej] = await Promise.all([
-        CU23_AsistenteVozModel.obtenerEstadoMotor(),
-        CU23_AsistenteVozModel.obtenerEjemplos(),
+        CU24_AsistenteVozModel.obtenerEstadoMotor(),
+        CU24_AsistenteVozModel.obtenerEjemplos(),
       ]);
       if (estado) setMotorInfo(estado);
       if (ej) setEjemplos(ej);
@@ -201,7 +201,7 @@ export function useAsistenteVoz(currentUser) {
         id_conversacion: ultimaSugerencia.sugerencias.idConversacion,
       } : null;
 
-      const res = await CU23_AsistenteVozModel.interpretarVoz(texto, idPaciente, contextoPrevio);
+      const res = await CU24_AsistenteVozModel.interpretarVoz(texto, idPaciente, contextoPrevio);
 
       const iaMsg = {
         id: `ia-${Date.now()}`,
@@ -259,7 +259,7 @@ export function useAsistenteVoz(currentUser) {
         id_conversacion: idConversacion,
       };
 
-      const resultado = await CU23_AsistenteVozModel.confirmarReserva(datos);
+      const resultado = await CU24_AsistenteVozModel.confirmarReserva(datos);
       setTicketConfirmado(resultado);
 
       // Agregar mensaje de confirmación en el chat
@@ -288,7 +288,7 @@ export function useAsistenteVoz(currentUser) {
   // Cargar historial
   const handleAbrirHistorial = async () => {
     try {
-      const list = await CU23_AsistenteVozModel.obtenerHistorial();
+      const list = await CU24_AsistenteVozModel.obtenerHistorial();
       setHistorialList(list);
       setModalHistorialOpen(true);
     } catch (e) {

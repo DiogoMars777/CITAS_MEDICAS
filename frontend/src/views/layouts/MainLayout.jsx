@@ -38,7 +38,7 @@ import CU18_VisualizarEstudiosView from '../PKG07_Laboratorios/CU18_VisualizarEs
 import CU19_RecordatoriosView from '../PKG08_DashboardReportes/CU19_Recordatorios/CU19_RecordatoriosView';
 import CU20_DashboardView from '../PKG08_DashboardReportes/CU20_Dashboard/CU20_DashboardView';
 import CU21_ReportesView from '../PKG08_DashboardReportes/CU21_Reportes/CU21_ReportesView';
-import CU23_AsistenteVozView from '../PKG08_DashboardReportes/CU23_AsistenteVozIA/CU23_AsistenteVozView';
+import CU24_AsistenteVozView from '../PKG08_DashboardReportes/CU24_AsistenteVozIA/CU24_AsistenteVozView';
 import CU22_BackupView from '../PKG01_Seguridad/CU22_BackupRestore/CU22_BackupView';
 import SeniorCUPlaceholder from '../common/SeniorCUPlaceholder';
 
@@ -515,7 +515,7 @@ export const MainLayout = ({ currentUser, onLogout }) => {
 
         {/* ÁREA DE CONTENIDO — CANVAS EJECUTIVO CLARO */}
         <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc', padding: '1.5rem' }}>
-          {activeCUId === 'CU23' && <CU23_AsistenteVozView currentUser={currentUser} />}
+          {activeCUId === 'CU24' && <CU24_AsistenteVozView currentUser={currentUser} />}
 
           {activeCUId === 'CU21' && <CU21_ReportesView />}
 
@@ -601,7 +601,7 @@ export const MainLayout = ({ currentUser, onLogout }) => {
                 />
               )}
 
-          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21', 'CU22', 'CU23'].includes(activeCUId) && (
+          {!['CU01', 'CU02', 'CU03', 'CU04', 'CU05', 'CU06', 'CU07', 'CU08', 'CU09', 'CU10', 'CU11', 'CU12', 'CU13', 'CU14', 'CU15', 'CU16', 'CU17', 'CU18', 'CU19', 'CU20', 'CU21', 'CU22', 'CU24'].includes(activeCUId) && (
             <SeniorCUPlaceholder
               cu={activeCUInfo.cu}
               pkg={activeCUInfo.pkg}

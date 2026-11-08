@@ -1,5 +1,5 @@
 /**
- * CU23: Asistente IA por Voz para Reserva Rápida de Citas
+ * CU24: Asistente IA por Voz para Reserva Rápida de Citas
  * Modelo de datos y cliente API REST (Google Gemini API / Backend CVS-2026)
  */
 
@@ -33,7 +33,7 @@ async function fetchSeguro(url, options = {}) {
   return data;
 }
 
-export const CU23_AsistenteVozModel = {
+export const CU24_AsistenteVozModel = {
   /**
    * Envía mensaje hablado/escrito a la IA para interpretación y búsqueda de cupos
    * Soporta contextoPrevio para retención de especialidad en cambios de día u horario
@@ -136,4 +136,4 @@ export const CU23_AsistenteVozModel = {
   },
 };
 
-export default CU23_AsistenteVozModel;
+export default CU24_AsistenteVozModel;

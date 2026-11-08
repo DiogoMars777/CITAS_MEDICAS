@@ -23,7 +23,7 @@ use App\Controllers\PKG08_DashboardReportes\CU19_Recordatorios\CU19_Recordatorio
 use App\Controllers\PKG08_DashboardReportes\CU20_Dashboard\CU20_DashboardController;
 use App\Controllers\PKG08_DashboardReportes\CU21_Reportes\CU21_ReportesController;
 use App\Controllers\PKG01_Seguridad\CU22_BackupRestore\CU22_BackupRestoreController;
-use App\Controllers\PKG08_DashboardReportes\CU23_AsistenteVozIA\CU23_AsistenteVozController;
+use App\Controllers\PKG08_DashboardReportes\CU24_AsistenteVozIA\CU24_AsistenteVozController;
 
 /*
 |--------------------------------------------------------------------------
@@ -261,15 +261,15 @@ Route::prefix('backups')->group(function () {
 });
 
 // ==========================================
-// CU23: Asistente IA por Voz para Reserva Rápida de Citas (Google Gemini API)
+// CU24: Asistente IA por Voz para Reserva Rápida de Citas (Google Gemini API)
 // ==========================================
 Route::prefix('ia-asistente')->group(function () {
-    Route::post('/interpretar-voz', [CU23_AsistenteVozController::class, 'interpretarVoz']);
-    Route::post('/confirmar-reserva', [CU23_AsistenteVozController::class, 'confirmarReserva']);
-    Route::get('/ejemplos', [CU23_AsistenteVozController::class, 'ejemplos']);
-    Route::get('/estado-motor', [CU23_AsistenteVozController::class, 'estadoMotor']);
-    Route::post('/configuracion-gemini', [CU23_AsistenteVozController::class, 'guardarConfiguracion']);
-    Route::get('/historial', [CU23_AsistenteVozController::class, 'historial']);
+    Route::post('/interpretar-voz', [CU24_AsistenteVozController::class, 'interpretarVoz']);
+    Route::post('/confirmar-reserva', [CU24_AsistenteVozController::class, 'confirmarReserva']);
+    Route::get('/ejemplos', [CU24_AsistenteVozController::class, 'ejemplos']);
+    Route::get('/estado-motor', [CU24_AsistenteVozController::class, 'estadoMotor']);
+    Route::post('/configuracion-gemini', [CU24_AsistenteVozController::class, 'guardarConfiguracion']);
+    Route::get('/historial', [CU24_AsistenteVozController::class, 'historial']);
 });
 
 

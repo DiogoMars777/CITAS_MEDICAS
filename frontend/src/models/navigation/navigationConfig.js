@@ -1,5 +1,5 @@
 /**
- * Configuración Oficial de Paquetes y Casos de Uso (CU01 - CU22)
+ * Configuración Oficial de Paquetes y Casos de Uso (CU01 - CU24)
  * Alineada 100% con la tabla oficial del Sistema de Citas Médicas
  * Clínica Vida Salud - 2026
  */
@@ -228,6 +228,17 @@ export const PACKAGES_CONFIG = [
         tablas: ['citas'],
         controlador: 'CU13_ControlAsistenciaController',
       },
+      {
+        id: 'CU23',
+        codigo: 'CU23_GestionarPagos',
+        numero: 'CU23',
+        titulo: 'Gestionar pagos y cobranza de citas',
+        actores: 'Recepcionista, Administrador, Paciente',
+        descripcion: 'Gestión y registro de pagos de consultas médicas, emisión de comprobantes y métodos de pago (Efectivo, QR, Tarjeta).',
+        estado: 'en_progreso',
+        tablas: ['pagos', 'citas', 'reservas'],
+        controlador: 'CU23_GestionarPagosController',
+      },
     ],
   },
   {
@@ -336,15 +347,15 @@ export const PACKAGES_CONFIG = [
         controlador: 'CU21_ReportesController',
       },
       {
-        id: 'CU23',
-        codigo: 'CU23_AsistenteVozIA',
-        numero: 'CU23',
+        id: 'CU24',
+        codigo: 'CU24_AsistenteVozIA',
+        numero: 'CU24',
         titulo: 'Asistente IA por voz para reserva rápida',
         actores: 'Paciente, Recepcionista, Administrador',
         descripcion: 'Asistente médico con reconocimiento y síntesis de voz (Google Gemini API) que interpreta síntomas y horarios para agendar citas en segundos.',
         estado: 'completo',
         tablas: ['citas', 'especialidades', 'medicos', 'turnos_medicos', 'ia_conversaciones'],
-        controlador: 'CU23_AsistenteVozController',
+        controlador: 'CU24_AsistenteVozController',
       },
     ],
   },

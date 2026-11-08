@@ -1,24 +1,24 @@
 <?php
 
-namespace App\Controllers\PKG08_DashboardReportes\CU23_AsistenteVozIA;
+namespace App\Controllers\PKG08_DashboardReportes\CU24_AsistenteVozIA;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use App\Services\PKG08_DashboardReportes\CU23_AsistenteVozService;
+use App\Services\PKG08_DashboardReportes\CU24_AsistenteVozService;
 
 /**
- * CU23: Asistente IA por Voz para Reserva Rápida de Citas
+ * CU24: Asistente IA por Voz para Reserva Rápida de Citas
  * Integra Google Gemini API y síntesis de voz en español boliviano
  * Actor(es): Paciente, Recepcionista, Administrador
  */
-class CU23_AsistenteVozController extends Controller
+class CU24_AsistenteVozController extends Controller
 {
-    protected CU23_AsistenteVozService $service;
+    protected CU24_AsistenteVozService $service;
 
-    public function __construct(CU23_AsistenteVozService $service)
+    public function __construct(CU24_AsistenteVozService $service)
     {
         $this->service = $service;
     }

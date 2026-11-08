@@ -13,11 +13,11 @@ use App\Models\PKG02_MedicosEspecialidades\CU05_GestionMedicos\Medico;
 use App\Models\PKG02_MedicosEspecialidades\CU04_GestionEspecialidades\Especialidad;
 
 /**
- * Servicio CU23: Asistente IA por Voz para Reserva Rápida de Citas
- * Integra la API de Google Gemini (gemini-2.5-flash / gemini-1.5-flash)
+ * Servicio CU24: Asistente IA por Voz para Reserva Rápida de Citas
+ * Integra la API de Google Gemini (gemini-3.5-flash-lite)
  * con motor clínico de triaje y disponibilidad en tiempo real (PostgreSQL).
  */
-class CU23_AsistenteVozService
+class CU24_AsistenteVozService
 {
     private string $timezone = 'America/La_Paz';
 

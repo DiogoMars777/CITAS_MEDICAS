@@ -17,9 +17,9 @@ import {
   ChevronRight,
   Stethoscope,
 } from 'lucide-react';
-import { useAsistenteVoz } from '../../../controllers/PKG08_DashboardReportes/CU23_AsistenteVozIA/CU23_AsistenteVozController';
+import { useAsistenteVoz } from '../../../controllers/PKG08_DashboardReportes/CU24_AsistenteVozIA/CU24_AsistenteVozController';
 
-export const CU23_AsistenteVozView = ({ currentUser }) => {
+export const CU24_AsistenteVozView = ({ currentUser }) => {
   const {
     messages,
     inputText,
@@ -48,7 +48,7 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       
-      {/* 1. ENCABEZADO EJECUTIVO CU23 */}
+      {/* 1. ENCABEZADO EJECUTIVO CU24 */}
       <div style={{
         background: '#ffffff',
         borderRadius: '16px',
@@ -81,7 +81,7 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
                 PKG08 • Inteligencia Artificial y Voz
               </span>
               <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px', background: '#ede9fe', color: '#6d28d9', fontWeight: 700 }}>
-                CU23 Oficial
+                CU24 Oficial
               </span>
             </div>
             <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
@@ -115,7 +115,7 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
               background: '#22c55e',
               boxShadow: '0 0 6px #22c55e',
             }} />
-            <span>Google Gemini AI Conectada (gemini-3.5-flash)</span>
+            <span>Google Gemini AI Conectada (gemini-3.5-flash-lite)</span>
           </div>
 
           {/* Botón Alternar Voz */}
@@ -1016,4 +1016,4 @@ export const CU23_AsistenteVozView = ({ currentUser }) => {
   );
 };
 
-export default CU23_AsistenteVozView;
+export default CU24_AsistenteVozView;
